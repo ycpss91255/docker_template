@@ -2,7 +2,7 @@
 
 ## Install Docker & NVIDIA Docker
 
-## Use Ste
+## Use Step
 
 1. Download this repository
 
