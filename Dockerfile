@@ -60,8 +60,7 @@ WORKDIR /home/${USER}/.tmp
 # * Copy custom configuration
 COPY config .
 
-RUN bash ./script/shell_setup.sh \
-    "bash" ${ROS_TYPE} ${ROS_MASTER_IP} ${ROS_SLAVE_IP} \
+RUN bash ./script/shell_setup.sh "bash" \
     && bash ./script/pip_setup.sh \
     && rm -rf /home/${USER}/.tmp
 
