@@ -109,8 +109,8 @@ function check_nvidia() {
         lspci | grep -iq NVIDIA ||
         lsmod | grep -q nvidia ||
         nvidia-smi -L | grep -iq nvidia) &&
-        (command -v nvidia-smi >/dev/null 2>&1 ||
-            command -v nvidia-docker >/dev/null 2>&1 ||
+        command -v nvidia-smi >/dev/null 2>&1 &&
+        (command -v nvidia-docker >/dev/null 2>&1 ||
             dpkg -l | grep -q nvidia-container-toolkit); then
         GPU_FLAG="--gpus all"
     else
