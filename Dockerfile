@@ -36,7 +36,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 ############################### INSTALL #######################################
 # * Install packages
 RUN apt update \
-    && apt-get install -y --no-install-recommends \
+    && apt install -y --no-install-recommends \
         sudo \
         git \
         htop \
@@ -51,7 +51,7 @@ RUN apt update \
         python3-dev \
         python3-setuptools \
         # * Work tools
-    && apt-get clean \
+    && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
 # gnome-terminal libcanberra-gtk-module libcanberra-gtk3-module \
