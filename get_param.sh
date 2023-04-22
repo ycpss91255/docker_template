@@ -108,7 +108,7 @@ function check_nvidia() {
     if (lspci | grep -q VGA ||
         lspci | grep -iq NVIDIA ||
         lsmod | grep -q nvidia ||
-        nvidia-smi -L | grep -iq nvidia) &&
+        nvidia-smi -L >/dev/null 2>&1 | grep -iq nvidia) &&
         (command -v nvidia-smi >/dev/null 2>&1) &&
         (command -v nvidia-docker >/dev/null 2>&1 ||
             dpkg -l | grep -q nvidia-container-toolkit); then
