@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 ARG USER=initial
 ARG GROUP=initial
 ARG UID=1000
-ARG GID=${UID}
+ARG GID="${UID}"
 ARG SHELL=/bin/bash
 ARG HARDWARE=x86_64
 ARG ENTRYPOINT_FILE=entrypint.sh
@@ -15,10 +15,10 @@ ENV NVIDIA_DRIVER_CAPABILITIES all
 # ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # * Setup users and groups
-RUN groupadd --gid ${GID} ${GROUP} \
-    && useradd --gid ${GID} --uid ${UID} -ms ${SHELL} ${USER} \
+RUN groupadd --gid "${GID}" "${GROUP}" \
+    && useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" \
     && mkdir -p /etc/sudoers.d \
-    && echo "${USER}:x:${UID}:${UID}:${USER},,,:$HOME:${shell}" >> /etc/passwd \
+    && echo "${USER}:x:${UID}:${UID}:${USER},,,:/home/${USER}:${shell}" >> /etc/passwd \
     && echo "${USER}:x:${UID}:" >> /etc/group \
     && echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" \
     && chmod 0440 "/etc/sudoers.d/${USER}"

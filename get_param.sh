@@ -45,7 +45,7 @@ function set_image_name() {
 
     # If the workspace folder has no prefix/suffix, set the image name to `unknown`
     # and the workspace path to the current directory
-    IMAGE=${IMAGE:-unknown}
+    IMAGE="${IMAGE:-unknown}"
 
     # Print out the values of IMAGE
     printf "%s" "${IMAGE}"
@@ -89,7 +89,7 @@ function get_workdir() {
             }')
     else
         # If no workspace folder is found based on the provided prefix, extract the path to the parent directory
-        WS_PATH=$(echo "${1}" | rev | cut -d '/' -f 2- | rev)
+        WS_PATH="$(echo "${1}" | rev | cut -d '/' -f 2- | rev)"
     fi
 
     # Print out the values of WS_PATH
@@ -138,11 +138,11 @@ function get_system_info() {
     # If that fails, fall back to using the `id` command to get the current user
     docker_info_name=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
     if [[ -z "${docker_info_name}" ]]; then
-        user=$(id -un)
-        group=$(id -gn)
+        user="$(id -un)"
+        group="$(id -gn)"
     else
-        user=${docker_info_name}
-        group=${docker_info_name}
+        user="${docker_info_name}"
+        group="${docker_info_name}"
     fi
     # user=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3 || id -un)
 
@@ -150,13 +150,13 @@ function get_system_info() {
     # group=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3 || id -gn)
 
     # Retrieve the UID of the current user using the `id` command and store it in the `uid` variable
-    uid=$(id -u)
+    uid="$(id -u)"
 
     # Retrieve the GID of the current user using the `id` command and store it in the `gid` variable
-    gid=$(id -g)
+    gid="$(id -g)"
 
     # Retrieve the hardware architecture of the current system using the `uname` command and store it in the `hardware` variable
-    hardware=$(uname -m)
+    hardware="$(uname -m)"
 
     # Print out the values of user, group, uid, gid and hardware
     printf "%s %s %d %d %s" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
@@ -251,7 +251,7 @@ ARGS=$(getopt \
 eval set -- "${ARGS}"
 
 while true; do
-    case "$1" in
+    case "${1}" in
     --debug)
         DEBUG=true
         shift
@@ -280,7 +280,7 @@ done
 # Start sharing xhost
 # xhost +local:root
 
-FILE_DIR=$(dirname $(readlink -f $0))
+FILE_DIR=$(dirname "$(readlink -f "${0}")")
 
 read -r GPU_FLAG <<<"$(check_nvidia)"
 read -r user group uid gid hardware <<<"$(get_system_info)"
@@ -290,9 +290,9 @@ read -r DOCKERFILE_NAME <<<"$(set_dockerfile "${FILE_DIR}" "${hardware}")"
 read -r ENTRYPOINT_FILE <<<"$(set_entrypoint "${FILE_DIR}" "${hardware}")"
 
 # Set the container name to be the same as the image name
-CONTAINER=${IMAGE}
+CONTAINER="${IMAGE}"
 
-if [ "$DEBUG" = true ]; then
+if [ "${DEBUG}" = true ]; then
     echo -e "GPU_FLAG=${GPU_FLAG}\n"
 
     echo "user=${user}"
