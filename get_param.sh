@@ -171,35 +171,40 @@ function get_system_info() {
 # Returns:
 #    DOCKERFILE_NAME: The name of the Dockerfile to be used
 #
+# Exit codes:
+#    1: Dockerfile file not found
+#    2: Incorrect naming format of Dockerfile file
+#
 # If no Dockerfile is found in the directory, an error message is displayed and the script exits.
 # If only one Dockerfile is found, it is returned.
 # If a Dockerfile with the architecture suffix is found, it is returned.
 # Otherwise, the default Dockerfile is returned.
 #
 function set_dockerfile() {
-    file_list=($(ls ${1} | grep Dockerfile))
+    readarray -t file_list < <(find "${1}" -maxdepth 1 -type f -name "Dockerfile*" -printf "%f\n")
 
     # Check if there is no Dockerfile file
-    if [[ ${#file_list[@]} == 0 ]]; then
-        echo "Not found Dockerfile file"
+    if [[ ${#file_list[@]} -eq 0 ]]; then
         exit 1
-    # Check if  there is only only one Dockerfile file
-    elif [[ ${#file_list[@]} == 1 ]]; then
-        DOCKERFILE_NAME="${file_list[0]}"
-    # Check if there is a Dockerfile_xxx file
-    elif [[ -e "${1}/Dockerfile_${2}" ]]; then
-        DOCKERFILE_NAME="Dockerfile_${2}"
-    # Use the default Dockerfile file
-    elif [[ -e "${1}/Dockerfile" ]]; then
-        DOCKERFILE_NAME="Dockerfile"
-    # If none of the above conditions are true, print an error message and exit
     else
-        echo "Unknown Dockerfile file name"
-        exit 1
+        for file in "${file_list[@]}"; do
+            # Make sure the Dockerfile is in the current directory
+            if [[ ${file} == "Dockerfile" ]]; then
+                DOCKERFILE_NAME="Dockerfile"
+                break
+            # Make sure the Dockerfile with the architecture suffix is in the current directory
+            elif [[ ${file} == "Dockerfile_${2}" ]]; then
+                DOCKERFILE_NAME="Dockerfile_${2}"
+                break
+            fi
+        done
     fi
 
+    # If none of the above conditions are true, print an error message and exit
+    if [[ -z ${DOCKERFILE_NAME} ]]; then exit 2; fi
+
     # Print out the values of DOCKERFILE_NAME
-    printf "%s" "${DOCKERFILE_NAME}"
+    echo "${DOCKERFILE_NAME}"
 }
 
 
@@ -211,6 +216,9 @@ function set_dockerfile() {
 #
 # Returns:
 #    ENTRYPOINT_FILE: The name of the entrypoint.sh to be used
+# Exit codes:
+#    1: entrypoint.sh file not found
+#    2: Incorrect naming format of entrypoint.sh file
 #
 # If no entrypoint.sh is found in the directory, an error message is displayed and the script exits.
 # If only one entrypoint.sh is found, it is returned.
@@ -218,26 +226,27 @@ function set_dockerfile() {
 # Otherwise, the default entrypoint.sh is returned.
 #
 function set_entrypoint() {
-    file_list=($(ls ${1} | grep entrypoint))
+    readarray -t file_list < <(find "${1}" -maxdepth 1 -type f -name "entrypoint*" -printf "%f\n")
 
     # Check if there is no entrypoint file
-    if [[ ${#file_list[@]} == 0 ]]; then
-        echo "Not found entrypoint file"
+    if [[ ${#file_list[@]} -eq 0 ]]; then
         exit 1
-    # Check if  there is only only one entrypoint file
-    elif [[ ${#file_list[@]} == 1 ]]; then
-        ENTRYPOINT_FILE="${file_list[0]}"
-    # Check if there is a entrypoint_xxx file
-    elif [[ -e "${1}/entrypoint_${2}.sh" ]]; then
-        ENTRYPOINT_FILE="entrypoint_${2}.sh"
-    # Use the default entrypoint file
-    elif [[ -e "${1}/entrypoint.sh" ]]; then
-        ENTRYPOINT_FILE="entrypoint.sh"
-    # If none of the above conditions are true, print an error message and exit
     else
-        echo "Unknown entrypoint file name"
-        exit 1
+        for file in "${file_list[@]}"; do
+            # Make sure the entrypoint.sh is in the current directory
+            if [[ ${file} == "entrypoint.sh" ]]; then
+                ENTRYPOINT_FILE="entrypoint.sh"
+                break
+            # Make sure the entrypoint.sh with the architecture suffix is in the current directory
+            elif [[ ${file} == "entrypoint_${2}.sh" ]]; then
+                ENTRYPOINT_FILE="entrypoint_${2}.sh"
+                break
+            fi
+        done
     fi
+
+    # If none of the above conditions are true, print an error message and exit
+    if [[ -z ${ENTRYPOINT_FILE} ]]; then exit 2; fi
 
     # Print out the values of ENTRYPOINT_FILE
     printf "%s" "${ENTRYPOINT_FILE}"
@@ -282,12 +291,38 @@ done
 
 FILE_DIR=$(dirname "$(readlink -f "${0}")")
 
+
 read -r GPU_FLAG <<<"$(check_nvidia)"
 read -r user group uid gid hardware <<<"$(get_system_info)"
 read -r IMAGE <<<"$(set_image_name "${FILE_DIR}")"
 read -r WS_PATH <<<"$(get_workdir "${FILE_DIR}" "${IMAGE}")"
-read -r DOCKERFILE_NAME <<<"$(set_dockerfile "${FILE_DIR}" "${hardware}")"
-read -r ENTRYPOINT_FILE <<<"$(set_entrypoint "${FILE_DIR}" "${hardware}")"
+DOCKERFILE_NAME=$(set_dockerfile "${FILE_DIR}" "${hardware}")
+set_dockerfile_exit_status=$?
+
+ENTRYPOINT_FILE=$(set_entrypoint "${FILE_DIR}" "${hardware}")
+set_entrypoint_exit_status=$?
+
+if [ "${set_dockerfile_exit_status}" != 0 ] || [ "${set_entrypoint_exit_status}" != 0 ]; then
+    case "${set_dockerfile_exit_status}" in
+    1)
+        echo "Dockerfile file not found"
+        ;;
+    2)
+        echo "Incorrect naming format of Dockerfile file"
+        ;;
+    esac
+
+    case "${set_entrypoint_exit_status}" in
+    1)
+        echo "entrypoint.sh file not found"
+        ;;
+    2)
+        echo "Incorrect naming format of entrypoint.sh file"
+        ;;
+    esac
+
+    exit 1
+fi
 
 # Set the container name to be the same as the image name
 CONTAINER="${IMAGE}"
@@ -309,3 +344,4 @@ if [ "${DEBUG}" = true ]; then
     echo "DOCKERFILE_NAME=${DOCKERFILE_NAME}"
     echo -e "ENTRYPOINT_FILE=${ENTRYPOINT_FILE}"
 fi
+

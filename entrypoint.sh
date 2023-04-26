@@ -2,4 +2,4 @@
 
 # echo "hello docker!!"
 
-exec $@
+exec "${@}"
