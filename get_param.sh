@@ -47,8 +47,8 @@ function set_image_name() {
     # and the workspace path to the current directory
     IMAGE="${IMAGE:-unknown}"
 
-    # Print out the values of IMAGE
-    printf "%s" "${IMAGE}"
+    # echo the values of IMAGE
+    echo "${IMAGE}"
 }
 
 # Function to extract the path of the workspace folder
@@ -92,8 +92,8 @@ function get_workdir() {
         WS_PATH="$(echo "${1}" | rev | cut -d '/' -f 2- | rev)"
     fi
 
-    # Print out the values of WS_PATH
-    printf "%s" "${WS_PATH}"
+    # echo the values of WS_PATH
+    echo "${WS_PATH}"
 }
 
 # Function to check if GraphicsCard is NVIDIA and nvidia-docker2 or nvidia-container-runtime is installed
@@ -117,8 +117,8 @@ function check_nvidia() {
         GPU_FLAG=""
     fi
 
-    # Print out the values of GPU_FLAG
-    printf "%s" "${GPU_FLAG}"
+    # echo the values of GPU_FLAG
+    echo "${GPU_FLAG}"
 }
 
 # Function to get system parameter, including user, group, UID, GID, hardware architecture
@@ -203,7 +203,7 @@ function set_dockerfile() {
     # If none of the above conditions are true, print an error message and exit
     if [[ -z ${DOCKERFILE_NAME} ]]; then exit 2; fi
 
-    # Print out the values of DOCKERFILE_NAME
+    # echo the values of DOCKERFILE_NAME
     echo "${DOCKERFILE_NAME}"
 }
 
@@ -248,8 +248,8 @@ function set_entrypoint() {
     # If none of the above conditions are true, print an error message and exit
     if [[ -z ${ENTRYPOINT_FILE} ]]; then exit 2; fi
 
-    # Print out the values of ENTRYPOINT_FILE
-    printf "%s" "${ENTRYPOINT_FILE}"
+    # echo the values of ENTRYPOINT_FILE
+    echo "${ENTRYPOINT_FILE}"
 }
 ################################ MAIN ##########################################
 # Analyze the user input parameters to make thecorresponding action
@@ -292,10 +292,10 @@ done
 FILE_DIR=$(dirname "$(readlink -f "${0}")")
 
 
-read -r GPU_FLAG <<<"$(check_nvidia)"
+GPU_FLAG="$(check_nvidia)"
 read -r user group uid gid hardware <<<"$(get_system_info)"
-read -r IMAGE <<<"$(set_image_name "${FILE_DIR}")"
-read -r WS_PATH <<<"$(get_workdir "${FILE_DIR}" "${IMAGE}")"
+IMAGE="$(set_image_name "${FILE_DIR}")"
+WS_PATH="$(get_workdir "${FILE_DIR}" "${IMAGE}")"
 DOCKERFILE_NAME=$(set_dockerfile "${FILE_DIR}" "${hardware}")
 set_dockerfile_exit_status=$?
 
