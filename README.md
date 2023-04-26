@@ -1,5 +1,6 @@
 # Steps for usage
-
+<!-- TODO: change to asciidoc -->
+<!-- BUG: container name = image -->
 ## English version
 
 1. Install Docker Engine.
@@ -61,6 +62,7 @@
         - Workspace folder name (prefix), ex: **chrome_ws**, the container name will be **chrome**.
         - Dockerfile name (suffix), ex: **Dockerfile_Firefox**, the container name will be **Firefox**.
         - If neither exists, the container name will be **unknown**.
+
 
 3. Dockerfile and entrypoint.sh notes:
     - It is possible to add hardware architecture as a suffix to the file name.
