@@ -7,7 +7,7 @@ docker run --rm \
     --privileged \
     --network=host \
     --ipc=host \
-    "${GPU_FLAG}" \
+    ${GPU_FLAG} \
     -v /home/"${user}"/.Xauthority:/home/"${user}"/.Xauthority \
     -e XAUTHORITY=/home/"${user}"/.Xauthority \
     -e DISPLAY="${DISPLAY}" \
