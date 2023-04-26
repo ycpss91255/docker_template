@@ -29,9 +29,9 @@ RUN sed -i 's@archive.ubuntu.com@ftp.tku.edu.tw@g' /etc/apt/sources.list
 # ? Change to Taiwan
 # RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list
 
-# Time zone
+# * Time zone
 ENV TZ=Asia/Taipei
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
 
 ############################### INSTALL #######################################
 # * Install packages
@@ -44,7 +44,7 @@ RUN apt update \
         curl \
         psmisc \
         # * Shell
-        byobu \
+        tmux \
         terminator \
         # * base tools
         python3-pip \
@@ -57,34 +57,41 @@ RUN apt update \
 # gnome-terminal libcanberra-gtk-module libcanberra-gtk3-module \
 # dbus-x11 libglvnd0 libgl1 libglx0 libegl1 libxext6 libx11-6 \
 
-############################### INSTALL #######################################
-# * Switch workspace to /home/${USER}/.tmp
-WORKDIR /home/${USER}/.tmp
-
-# * Copy custom configuration
-COPY config .
-
-RUN bash ./script/shell_setup.sh "bash" \
-    && bash ./script/pip_setup.sh \
-    && rm -rf /home/${USER}/.tmp
-
+############################### OTHER #######################################
 # * Copy entrypoint
+# ? Requires docker version >= 17.09
 COPY --chmod=0775 ./${ENTRYPOINT_FILE} /entrypoint.sh
-
-# * Switch workspace to /home/${USER}
-WORKDIR /home/${USER}
+# ? docker version < 17.09
+# COPY ./${ENTRYPOINT_FILE} /entrypoint.sh
+# RUN sudo chmod 0775 /entrypoint.sh
 
 # * Switch user to ${USER}
 USER ${USER}
-RUN sudo mkdir work
 
 # * Make SSH available
 EXPOSE 22
 
-# * Switch workspace to ~/work
-WORKDIR /home/${USER}/work
+############################## USER CONFIG ####################################
+# * Copy custom configuration
+# ? Requires docker version >= 17.09
+COPY --chown="${USER}":"${GROUP}" --chmod=0775 config config
+# ? docker version < 17.09
+# COPY config config
+# RUN sudo chown -R "${USER}":"${GROUP}" config \
+    # && sudo chmod -R 0775 config
 
-# ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
-# ENTRYPOINT [ "/entrypoint.sh", "byobu" ]
-ENTRYPOINT [ "/entrypoint.sh", "bash" ]
+RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
+    && ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" \
+    && ./config/shell/tmux/tmux_setup.sh "${USER}" "${GROUP}" \
+    && ./config/pip/pip_setup.sh \
+    && sudo rm -rf /config
+
+RUN sudo mkdir /home/"${USER}"/work
+
+# * Switch workspace to ~/work
+WORKDIR /home/"${USER}"/work
+
+ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
+# ENTRYPOINT [ "/entrypoint.sh", "tmux" ]
+# ENTRYPOINT [ "/entrypoint.sh", "bash" ]
 # ENTRYPOINT [ "/entrypoint.sh" ]
