@@ -56,6 +56,8 @@ RUN apt update \
 
 # gnome-terminal libcanberra-gtk-module libcanberra-gtk3-module \
 # dbus-x11 libglvnd0 libgl1 libglx0 libegl1 libxext6 libx11-6 \
+# display dep
+# libnss3 libgbm1 libxshmfence1 libdrm2 libx11-xcb1 libxcb-*-dev
 
 ############################### OTHER #######################################
 # * Copy entrypoint
