@@ -338,6 +338,7 @@ if [ "${DEBUG}" = true ]; then
 
     echo "FILE_DIR=${FILE_DIR}"
     echo "WS_PATH=${WS_PATH}"
+# BUG: docker image is a-z not A-Z
     echo "IMAGE=${IMAGE}"
     echo -e "CONTAINER=${CONTAINER}\n"
 

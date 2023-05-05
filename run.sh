@@ -18,3 +18,6 @@ docker run --rm \
     -v /dev:/dev \
     -v "${WS_PATH}":/home/"${user}"/work \
     -it --name "${CONTAINER}" "${user}"/"${IMAGE}"
+
+# user if docker login username is not the same as host
+    # -v /home/"${user}"/.Xauthority:/home/"${user}"/.Xauthority \
