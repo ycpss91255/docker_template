@@ -13,7 +13,7 @@
 [profiles]
   [[default]]
     use_system_font = False
-    background_darkness = 0.75
+    background_darkness = 1.0
     background_type = image
     scroll_background = False
     font = Monospace 12
