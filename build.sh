@@ -4,7 +4,7 @@
 source "$(dirname "$(readlink -f "${0}")")/get_param.sh"
 
 # Build docker images
-docker build -t "${user}"/"${IMAGE}" \
+docker build -t "${docker_hub_user}"/"${IMAGE}" \
     --build-arg USER="${user}" \
     --build-arg UID="${uid}" \
     --build-arg GROUP="${group}" \
@@ -15,3 +15,4 @@ docker build -t "${user}"/"${IMAGE}" \
 
 #     --progress=plain \
 #     --no-cache \
+
