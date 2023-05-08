@@ -142,7 +142,7 @@ function get_system_info() {
     if [[ -z "${docker_info_name}" ]]; then
         docker_hub_user="$(id -un)"
     else
-        user="${docker_info_name}"
+        docker_hub_user="${docker_info_name}"
     fi
 
     user="$(id -un)"
