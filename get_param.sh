@@ -301,28 +301,6 @@ set_dockerfile_exit_status=$?
 ENTRYPOINT_FILE=$(set_entrypoint "${FILE_DIR}" "${hardware}")
 set_entrypoint_exit_status=$?
 
-if [ "${set_dockerfile_exit_status}" != 0 ] || [ "${set_entrypoint_exit_status}" != 0 ]; then
-    case "${set_dockerfile_exit_status}" in
-    1)
-        echo "Dockerfile file not found"
-        ;;
-    2)
-        echo "Incorrect naming format of Dockerfile file"
-        ;;
-    esac
-
-    case "${set_entrypoint_exit_status}" in
-    1)
-        echo "entrypoint.sh file not found"
-        ;;
-    2)
-        echo "Incorrect naming format of entrypoint.sh file"
-        ;;
-    esac
-
-    exit 1
-fi
-
 # Set the container name to be the same as the image name
 CONTAINER="${IMAGE}"
 
@@ -346,3 +324,25 @@ if [ "${DEBUG}" = true ]; then
     echo -e "ENTRYPOINT_FILE=${ENTRYPOINT_FILE}"
 fi
 
+# Check if the Dockerfile and entrypoint.sh files are found and set correctly
+if [ "${set_dockerfile_exit_status}" != 0 ] || [ "${set_entrypoint_exit_status}" != 0 ]; then
+    case "${set_dockerfile_exit_status}" in
+    1)
+        echo "Dockerfile file not found"
+        ;;
+    2)
+        echo "Incorrect naming format of Dockerfile file"
+        ;;
+    esac
+
+    case "${set_entrypoint_exit_status}" in
+    1)
+        echo "entrypoint.sh file not found"
+        ;;
+    2)
+        echo "Incorrect naming format of entrypoint.sh file"
+        ;;
+    esac
+
+    exit 1
+fi
