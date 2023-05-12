@@ -33,6 +33,17 @@ RUN sed -i 's@archive.ubuntu.com@ftp.tku.edu.tw@g' /etc/apt/sources.list
 ENV TZ=Asia/Taipei
 RUN ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
 
+# * Copy custom configuration
+# ? Requires docker version >= 17.09
+COPY --chmod=0775 ./${ENTRYPOINT_FILE} /entrypoint.sh
+COPY --chown="${USER}":"${GROUP}" --chmod=0775 config config
+# ? docker version < 17.09
+# COPY ./${ENTRYPOINT_FILE} /entrypoint.sh
+# COPY config config
+# RUN sudo chmod 0775 /entrypoint.sh && \
+    # sudo chown -R "${USER}":"${GROUP}" config \
+    # && sudo chmod -R 0775 config
+
 ############################### INSTALL #######################################
 # * Install packages
 RUN apt update \
@@ -59,28 +70,9 @@ RUN apt update \
 # display dep
 # libnss3 libgbm1 libxshmfence1 libdrm2 libx11-xcb1 libxcb-*-dev
 
-############################### OTHER #######################################
-# * Copy entrypoint
-# ? Requires docker version >= 17.09
-COPY --chmod=0775 ./${ENTRYPOINT_FILE} /entrypoint.sh
-# ? docker version < 17.09
-# COPY ./${ENTRYPOINT_FILE} /entrypoint.sh
-# RUN sudo chmod 0775 /entrypoint.sh
-
+############################## USER CONFIG ####################################
 # * Switch user to ${USER}
 USER ${USER}
-
-# * Make SSH available
-EXPOSE 22
-
-############################## USER CONFIG ####################################
-# * Copy custom configuration
-# ? Requires docker version >= 17.09
-COPY --chown="${USER}":"${GROUP}" --chmod=0775 config config
-# ? docker version < 17.09
-# COPY config config
-# RUN sudo chown -R "${USER}":"${GROUP}" config \
-    # && sudo chmod -R 0775 config
 
 RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
     && ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" \
@@ -88,10 +80,12 @@ RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
     && ./config/pip/pip_setup.sh \
     && sudo rm -rf /config
 
-RUN sudo mkdir /home/"${USER}"/work
-
 # * Switch workspace to ~/work
+RUN sudo mkdir -p /home/"${USER}"/work
 WORKDIR /home/"${USER}"/work
+
+# * Make SSH available
+EXPOSE 22
 
 ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
 # ENTRYPOINT [ "/entrypoint.sh", "tmux" ]
