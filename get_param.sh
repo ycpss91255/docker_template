@@ -105,13 +105,14 @@ function get_workdir() {
 #    GPU_FLAG: if NVIDIA graphics card and nvidia-docker2 or nvidia-container-runtime is installed, empty string otherwise
 #
 function check_nvidia() {
-    if (lspci | grep -q VGA ||
-        lspci | grep -iq NVIDIA ||
-        lsmod | grep -q nvidia ||
-        nvidia-smi -L >/dev/null 2>&1 | grep -iq nvidia) &&
-        (command -v nvidia-smi >/dev/null 2>&1) &&
-        (command -v nvidia-docker >/dev/null 2>&1 ||
-            dpkg -l | grep -q nvidia-container-toolkit); then
+    # if (lspci | grep -q VGA ||
+    #     lspci | grep -iq NVIDIA ||
+    #     lsmod | grep -q nvidia ||
+    #     nvidia-smi -L >/dev/null 2>&1 | grep -iq nvidia) &&
+    #     (command -v nvidia-smi >/dev/null 2>&1) &&
+    #     (command -v nvidia-docker >/dev/null 2>&1 ||
+    #         dpkg -l | grep -q nvidia-container-toolkit); then
+    if (dpkg -l | grep -q nvidia-docker || dpkg -l | grep -q nvidia-container-toolkit); then
         GPU_FLAG="--gpus all"
     else
         GPU_FLAG=""
