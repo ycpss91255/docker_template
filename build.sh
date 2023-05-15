@@ -4,7 +4,7 @@
 source "$(dirname "$(readlink -f "${0}")")/get_param.sh"
 
 # Build docker images
-docker build -t "${docker_hub_user}"/"${IMAGE}" \
+docker build -t "${DOCKER_HUB_USER}"/"${IMAGE}" \
     --build-arg USER="${user}" \
     --build-arg UID="${uid}" \
     --build-arg GROUP="${group}" \
