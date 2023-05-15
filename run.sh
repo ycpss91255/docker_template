@@ -8,7 +8,7 @@ docker run --rm \
     --network=host \
     --ipc=host \
     ${GPU_FLAG} \
-    -v /home/"${user}"/.Xauthority:/home/"${user}"/.Xauthority \
+    -v /tmp/.Xauthority:/home/"${user}"/.Xauthority \
     -e XAUTHORITY=/home/"${user}"/.Xauthority \
     -e DISPLAY="${DISPLAY}" \
     -e QT_X11_NO_MITSHM=1 \
