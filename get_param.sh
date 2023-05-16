@@ -113,13 +113,24 @@ function check_nvidia() {
     #     (command -v nvidia-docker >/dev/null 2>&1 ||
     #         dpkg -l | grep -q nvidia-container-toolkit); then
     if (dpkg -l | grep -q nvidia-docker || dpkg -l | grep -q nvidia-container-toolkit); then
+        # Used in Docker run shell script
         GPU_FLAG="--gpus all"
+
+        # Used in Docker compose shell script
+        COMPOSE_GPU_FLAG="nvidia"
+        COMPOSE_GPU_CAPABILITIES="gpu, utility"
+
     else
+        # Used in Docker run shell script
         GPU_FLAG=""
+
+        # Used in Docker compose shell script
+        NVIDIA_FLAG=""
+        GPU_CAPABILITIES=""
     fi
 
     # echo the values of GPU_FLAG
-    echo "${GPU_FLAG}"
+    printf "%s.%s.%s" "${GPU_FLAG}" "${COMPOSE_GPU_FLAG}" "${COMPOSE_GPU_CAPABILITIES}"
 }
 
 # Function to get system parameter, including user, group, UID, GID, hardware architecture
@@ -128,7 +139,7 @@ function check_nvidia() {
 #    None
 #
 # Returns:
-#    docker_hub_user: If you have logged in to docker, it is the user name of docker hub
+#    DOCKER_HUB_USER: If you have logged in to docker, it is the user name of docker hub
 #    user: the user of the current Docker environment or the user of the current system
 #    group: the group of the current user
 #    uid: the UID of the current user
@@ -137,13 +148,13 @@ function check_nvidia() {
 #
 function get_system_info() {
     # Try to retrieve the current user from Docker using the `docker info`
-    # command and store it in the `docker_hub_user` variable
+    # command and store it in the `DOCKER_HUB_USER` variable
     # If that fails, fall back to using the `id` command to get the current user
-    docker_info_name=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
-    if [[ -z "${docker_info_name}" ]]; then
-        docker_hub_user="$(id -un)"
+    DOCKER_INFO_NAME=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
+    if [[ -z "${DOCKER_INFO_NAME}" ]]; then
+        DOCKER_HUB_USER="$(id -un)"
     else
-        docker_hub_user="${docker_info_name}"
+        DOCKER_HUB_USER="${DOCKER_INFO_NAME}"
     fi
 
     user="$(id -un)"
@@ -159,7 +170,7 @@ function get_system_info() {
     hardware="$(uname -m)"
 
     # Print out the values of user, group, uid, gid and hardware
-    printf "%s %s %s %d %d %s" "${docker_hub_user}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
+    printf "%s %s %s %d %d %s" "${DOCKER_HUB_USER}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
 }
 
 # This function sets the Dockerfile name based on the directory path and hardware architecture
@@ -291,9 +302,8 @@ done
 
 FILE_DIR=$(dirname "$(readlink -f "${0}")")
 
-
-GPU_FLAG="$(check_nvidia)"
-read -r docker_hub_user user group uid gid hardware <<<"$(get_system_info)"
+IFS='.' read -r GPU_FLAG COMPOSE_GPU_FLAG COMPOSE_GPU_CAPABILITIES <<< "$(check_nvidia)"
+read -r DOCKER_HUB_USER user group uid gid hardware <<<"$(get_system_info)"
 IMAGE="$(set_image_name "${FILE_DIR}")"
 WS_PATH="$(get_workdir "${FILE_DIR}" "${IMAGE}")"
 DOCKERFILE_NAME=$(set_dockerfile "${FILE_DIR}" "${hardware}")
@@ -306,9 +316,7 @@ set_entrypoint_exit_status=$?
 CONTAINER="${IMAGE}"
 
 if [ "${DEBUG}" = true ]; then
-    echo -e "GPU_FLAG=${GPU_FLAG}\n"
-
-    echo "docker_hub_user=${docker_hub_user}"
+    echo "DOCKER_HUB_USER=${DOCKER_HUB_USER}"
     echo "user=${user}"
     echo "group=${group}"
     echo "uid=${uid}"
@@ -317,12 +325,15 @@ if [ "${DEBUG}" = true ]; then
 
     echo "FILE_DIR=${FILE_DIR}"
     echo "WS_PATH=${WS_PATH}"
-# BUG: docker image is a-z not A-Z
     echo "IMAGE=${IMAGE}"
     echo -e "CONTAINER=${CONTAINER}\n"
 
     echo "DOCKERFILE_NAME=${DOCKERFILE_NAME}"
     echo -e "ENTRYPOINT_FILE=${ENTRYPOINT_FILE}"
+
+    echo "GPU_FLAG=${GPU_FLAG}"
+    echo "COMPOSE_GPU_FLAG=${COMPOSE_GPU_FLAG}"
+    echo "COMPOSE_GPU_CAPABILITIES=${COMPOSE_GPU_CAPABILITIES}"
 fi
 
 # Check if the Dockerfile and entrypoint.sh files are found and set correctly
