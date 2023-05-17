@@ -18,7 +18,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES all
 RUN groupadd --gid "${GID}" "${GROUP}" \
     && useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" \
     && mkdir -p /etc/sudoers.d \
-    && echo "${USER}:x:${UID}:${UID}:${USER},,,:/home/${USER}:${shell}" >> /etc/passwd \
+    && echo "${USER}:x:${UID}:${UID}:${USER},,,:/home/${USER}:${SHELL}" >> /etc/passwd \
     && echo "${USER}:x:${UID}:" >> /etc/group \
     && echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" \
     && chmod 0440 "/etc/sudoers.d/${USER}"
