@@ -70,6 +70,8 @@ RUN apt update \
 # display dep
 # libnss3 libgbm1 libxshmfence1 libdrm2 libx11-xcb1 libxcb-*-dev
 
+RUN ./config/pip/pip_setup.sh
+
 ############################## USER CONFIG ####################################
 # * Switch user to ${USER}
 USER ${USER}
@@ -77,7 +79,6 @@ USER ${USER}
 RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
     && ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" \
     && ./config/shell/tmux/tmux_setup.sh "${USER}" "${GROUP}" \
-    && ./config/pip/pip_setup.sh \
     && sudo rm -rf /config
 
 # * Switch workspace to ~/work
