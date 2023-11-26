@@ -6,6 +6,7 @@ ARG GROUP=initial
 ARG UID=1000
 ARG GID="${UID}"
 ARG SHELL=/bin/bash
+# TODO: use Hardware parameter
 ARG HARDWARE=x86_64
 ARG ENTRYPOINT_FILE=entrypint.sh
 
