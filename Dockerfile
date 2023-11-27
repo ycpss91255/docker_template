@@ -1,4 +1,6 @@
-FROM ubuntu:22.04
+# syntax = docker/dockerfile:experimental
+FROM osrf/ros:noetic-desktop-full
+# FROM ubuntu:22.04
 ############################## SYSTEM PARAMETERS ##############################
 # * Arguments
 ARG USER=initial
@@ -89,7 +91,7 @@ WORKDIR /home/"${USER}"/work
 # * Make SSH available
 EXPOSE 22
 
-ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
+# ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
 # ENTRYPOINT [ "/entrypoint.sh", "tmux" ]
-# ENTRYPOINT [ "/entrypoint.sh", "bash" ]
+ENTRYPOINT [ "/entrypoint.sh", "bash" ]
 # ENTRYPOINT [ "/entrypoint.sh" ]
