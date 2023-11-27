@@ -1,0 +1,89 @@
+= 使用步骤
+:experimental:
+:toc: right
+:imagesdir: images
+
+[NOTE]
+====
+以下内容需要相应转换。
+
+`<workspace_path>` 替换为实际项目文件夹路径。
+
+`<docker_path>` 替换为 Docker 的实际位置。
+====
+
+== 使用步骤 & 使用方法
+
+. 安装 Docker 引擎。
+* https://docs.docker.com/engine/install/[Docker 引擎]
+* https://docs.docker.com/engine/install/linux-postinstall/[linux 安装后设置]
+
+. 下载这个 GitHub 仓库。
++
+[source, shell]
+----
+git clone https://github.com/ycpss91255/docker_template
+----
++
+
+. 复制到您的项目目录。
++
+[source, shell]
+----
+cp -r docker_template <workspace_path>
+# 或
+cp -r docker_template <workspace_path>/docker
+----
++
+
+* 示例：
++
+[source, shell]
+----
+# 使用 ROS 格式工作空间
+cp -r docker_template ~/test_ws/src
+----
++
+
+. 调整 Dockerfile 以满足您的需求。
+
+. 构建 Docker 镜像（运行 `build.sh`）。
++
+[source, shell]
+----
+./<docker_path>/build.sh
+----
++
+
+. 运行 Docker 容器（运行 `run.sh`）。
++
+[source, shell]
+----
+./<docker_path>/run.sh
+----
++
+
+. 享受 Docker 支持。
+
+== 使用时请注意以下几点
+
+. *Image* 名称将根据以下顺序命名：
+* Dockerfile 名称（后缀），例如：*Dockerfile_DuckDuckGo*，镜像名称将是 *DuckDuckGo*。
+* 工作空间文件夹名称（前缀），例如：*Microsoft_ws*，镜像名称将是 *Microsoft*。
+* 如果两者都不存在，镜像名称将是 *unknown*。
+
+. *Container* 名称将以 `<user>/<container>` 的格式命名，并根据以下顺序命名：
+* `<user>`：
+** Docker Hub 登录用户名。
+** 系统用户名。
+** 如果两者都不存在，`<user>` 将被命名为 initial。
+* `<container>`：
+** 工作空间文件夹名称（前缀），例如：*chrome_ws*，容器名称将是 *chrome*。
+** Dockerfile 名称（后缀），例如：*Dockerfile_Firefox*，容器名称将是 *Firefox*。
+** 如果两者都不存在，容器名称将是 **unknown**。
+
+. Dockerfile 和 entrypoint.sh 注意事项：
+* 可以将硬件架构作为文件名的后缀添加。
+** 例如：*Dockerfile_x86_64* 或 *Dockerfile_aarch64*。
+** 例如：*entrypoint_x86_64.sh* 或 *entrypoint_aarch64.sh*。
+** 如果 Docker 文件夹中有多个 Dockerfile 或 entrypoint.sh 文件，脚本将使用与当前硬件架构匹配的文件。

@@ -1,0 +1,90 @@
+= Steps for usage
+:experimental:
+:toc: right
+:imagesdir: images
+
+[NOTE]
+====
+The following content needs to be converted accordingly.
+
+`<workspace_path>` replace with real project folder path.
+
+`<docker_path>` replace with real to docker location.
+====
+
+== install and Usage
+
+. Install Docker Engine.
+* https://docs.docker.com/engine/install/[Docker Engine]
+* https://docs.docker.com/engine/install/linux-postinstall/[linux post-installation]
+
+. Download this github repository.
++
+[source, shell]
+----
+git clone https://github.com/ycpss91255/docker_template
+----
++
+
+. Copy to your project directory.
++
+[source, shell]
+----
+cp -r docker_template <workspace_path>
+# or
+cp -r docker_template <workspace_path>/docker
+----
++
+
+* Example:
++
+[source, shell]
+----
+# Usage ROS format workspace
+cp -r docker_template ~/test_ws/src
+----
++
+
+. Adjust Dockerfile to suit your needs.
+
+. Build Docker image (run `build.sh`).
++
+[source, shell]
+----
+./<docker_path>/build.sh
+----
++
+
+. Run Docker container (run `run.sh`).
++
+[source, shell]
+----
+./<docker_path>/run.sh
+----
++
+
+. Enjoy Docker support.
+
+== Pay attention to the following points when using
+
+. *Image* name wil be named based on the follwing order:
+* Dockerfile name (suffix), ex: *Dockerfile_DuckDuckGo*, the image name will be *DuckDuckGo*.
+* Workspace folder name (prefix), ex: *Microsoft_ws*, the image name will be *Microsoft*.
+* If neither exists, the image name will be *unknown*.
+
+. *Container* name will be named in the format of `<user>/<container>` and named based on the following order:
+* `<user>`:
+** Docker Hub login username.
+** system username.
+** if neither exists, `<user>` will be named initial.
+* `<container>`:
+** Workspace folder name (prefix), ex: *chrome_ws*, the container name will be *chrome*.
+** Dockerfile name (suffix), ex: *Dockerfile_Firefox*, the container name will be *Firefox*.
+** If neither exists, the container name will be *unknown*.
+
+. Dockerfile and entrypoint.sh notes:
+* It is possible to add hardware architecture as a suffix to the file name.
+** ex: *Dockerfile_x86_64* or *Dockerfile_aarch64*.
+** ex: *entrypoint_x86_64.sh* or *entrypoint_aarch64.sh*.
+** If there are multiple Dockerfile or entrypoint.sh file in the docker folder, the script will use the one that matches the current hardware architecture.
+
