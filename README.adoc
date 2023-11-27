@@ -5,3 +5,8 @@
 == link:README_en.adoc[簡體中文]
 
 == link:README_en.adoc[繁體中文]
+
+== TODO list
+
+- [ ] del *privileged* from `run.sh`.
+- [ ] add shell script, find the specified USB and map it to the docker container.
