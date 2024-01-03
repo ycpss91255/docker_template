@@ -1,7 +1,7 @@
 = README
 
-== link:README_en.adoc[English]
+== link:README/README_en.adoc[English]
 
-== link:README_en.adoc[簡體中文]
+== link:README/README_cn.adoc[簡體中文]
 
-== link:README_en.adoc[繁體中文]
+== link:README/README_zh.adoc[繁體中文]
