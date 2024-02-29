@@ -150,12 +150,13 @@ function get_system_info() {
     # Try to retrieve the current user from Docker using the `docker info`
     # command and store it in the `DOCKER_HUB_USER` variable
     # If that fails, fall back to using the `id` command to get the current user
-    DOCKER_INFO_NAME=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
-    if [[ -z "${DOCKER_INFO_NAME}" ]]; then
-        DOCKER_HUB_USER="$(id -un)"
-    else
-        DOCKER_HUB_USER="${DOCKER_INFO_NAME}"
-    fi
+    # BUG: computer user name is not equal to docker user name
+    # DOCKER_INFO_NAME=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
+    # if [[ -z "${DOCKER_INFO_NAME}" ]]; then
+    #     DOCKER_HUB_USER="$(id -un)"
+    # else
+    #     DOCKER_HUB_USER="${DOCKER_INFO_NAME}"
+    # fi
 
     user="$(id -un)"
     group="$(id -gn)"
