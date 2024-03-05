@@ -67,7 +67,7 @@ cp -r docker_template ~/test_ws/src
 
 == 使用時請注意以下幾點
 
-// TODO: add worksapce path depiction
+// TODO: add workspace path depiction
 
 . *Image* 名稱將按以下順序命名：
 * Dockerfile 名稱（後綴），例如：*Dockerfile_DuckDuckGo*，映像名稱將是 *DuckDuckGo*。

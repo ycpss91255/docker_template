@@ -1,7 +1,8 @@
 = README
 
-== link:README/README_en.adoc[English]
+== link:README.adoc[English]
 
-== link:README/README_cn.adoc[簡體中文]
+== link:README_zh.adoc[繁體中文]
 
-== link:README/README_zh.adoc[繁體中文]
+
+download coppeliasim.tar.xz save to config/coppeliasim

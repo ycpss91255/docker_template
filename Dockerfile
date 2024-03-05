@@ -34,6 +34,35 @@ RUN sed -i 's@archive.ubuntu.com@ftp.tku.edu.tw@g' /etc/apt/sources.list
 ENV TZ=Asia/Taipei
 RUN ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
 
+############################### INSTALL #######################################
+# * Install packages
+RUN apt update \
+    && apt install -y --no-install-recommends \
+        sudo \
+        git \
+        wget \
+        curl \
+        psmisc \
+        vim \
+        # * Shell
+        tmux \
+        # tmuxinator \
+        terminator \
+        # * base tools
+        htop \
+        python3-pip \
+        python3-dev \
+        python3-setuptools \
+        # * coppeliasim dep
+        libgl1-mesa-glx \
+        libqt5gui5 \
+        xz-utils \
+        # * ros2
+        software-properties-common \
+        # * Work tools
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # * Copy custom configuration
 # ? Requires docker version >= 17.09
 COPY --chmod=0775 ./${ENTRYPOINT_FILE} /entrypoint.sh
@@ -45,41 +74,48 @@ COPY --chown="${USER}":"${GROUP}" --chmod=0775 config config
     # sudo chown -R "${USER}":"${GROUP}" config \
     # && sudo chmod -R 0775 config
 
-############################### INSTALL #######################################
-# * Install packages
-RUN apt update \
-    && apt install -y --no-install-recommends \
-        sudo \
-        git \
-        htop \
-        wget \
-        curl \
-        psmisc \
-        # * Shell
-        tmux \
-        terminator \
-        # * base tools
-        python3-pip \
-        python3-dev \
-        python3-setuptools \
-        # * Work tools
-    && apt clean \
-    && rm -rf /var/lib/apt/lists/*
+# * Install coppeliasim
+ARG COPPELIASIM_DIR="/home/${USER}/coppeliasim"
 
-# gnome-terminal libcanberra-gtk-module libcanberra-gtk3-module \
-# dbus-x11 libglvnd0 libgl1 libglx0 libegl1 libxext6 libx11-6 \
-# display dep
-# libnss3 libgbm1 libxshmfence1 libdrm2 libx11-xcb1 libxcb-*-dev
+RUN mkdir -p "${COPPELIASIM_DIR}" \
+    && tar Jvxf ./config/coppeliasim/*.tar.xz -C "${COPPELIASIM_DIR}" --strip-components=1
 
 RUN ./config/pip/pip_setup.sh
+
+# * Install ROS2 base
+        # ros-humble-ros-base \
+RUN add-apt-repository -y universe \
+    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+    | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+    && apt update \
+    && apt install -y --no-install-recommends \
+        ros-humble-desktop \
+        ros-dev-tools \
+        python3-rosdep \
+        python3-colcon-common-extensions \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rosdep init \
+    && sudo -u ${USER} bash -c "rosdep update"
 
 ############################## USER CONFIG ####################################
 # * Switch user to ${USER}
 USER ${USER}
 
+# * ROS Arguments
+ARG ROS_DISTRO=humble
+# LOCALHOST or GLOBAL
+ARG ROS_TYPE=LOCALHOST
+# ? https://docs.ros.org/en/humble/Concepts/About-Domain-ID.html
+# short 0~101
+ARG ROS_ID=0
+
 RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
     && ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" \
     && ./config/shell/tmux/tmux_setup.sh "${USER}" "${GROUP}" \
+    && ./config/ros2/ros2_setup.sh "${ROS_DISTRO}" "${ROS_TYPE}" "${ROS_ID}" \
     && sudo rm -rf /config
 
 # * Switch workspace to ~/work
@@ -89,7 +125,7 @@ WORKDIR /home/"${USER}"/work
 # * Make SSH available
 EXPOSE 22
 
-ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
-# ENTRYPOINT [ "/entrypoint.sh", "tmux" ]
+# ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
+ENTRYPOINT [ "/entrypoint.sh", "tmux" ]
 # ENTRYPOINT [ "/entrypoint.sh", "bash" ]
 # ENTRYPOINT [ "/entrypoint.sh" ]
