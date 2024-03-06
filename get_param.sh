@@ -25,7 +25,7 @@ function set_image_name() {
 	# If the `docker` folder has no suffix, check if the workspace folder has a prefix, such as `xxx_ws`
 	# If yes, extract the prefix and store it in the `IMAGE` variable, and update the `WS_PATH` variable accordingly
 	elif echo "${1}" | grep -q "_ws"; then
-		IMAGE=$(echo "${1}" | sed 's|_ws[^_ws]*$||' | sed "s|.*/||")
+		IMAGE=$(echo "${1}" | sed 's|.*/\([^/]*\)_ws.*|\1|')
 
 	# If the workspace folder has no prefix/suffix, set the image name to `unknown`
 	# and the workspace path to the current directory
