@@ -4,20 +4,20 @@
 # ${2}: GROUP
 
 # Write Hello and alias to bashrc
-cat << 'EOF' >> /home/"${1}"/.bashrc
+printf "
 echo 'Hello Docker!'
 
 # Commonly used aliases
 alias eb='vim ~/.bashrc'
 alias sb='source ~/.bashrc && \
-    echo "You source user config!"'
+    echo \"You source user config!\"'
 alias wb='source ~/work/devel/setup.bash && \
-    echo "You source workspace config!"'
+    echo \"You source workspace config!\"'
 
-EOF
+" >>/home/"${1}"/.bashrc
 
 # Write Color and git branch to bashrc
-cat << 'EOF' >> /home/"${1}"/.bashrc
+cat <<'EOF' >>/home/"${1}"/.bashrc
 # Color and git branch
 force_color_prompt=yes
 color_prompt=yes

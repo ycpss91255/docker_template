@@ -1,1 +1,9 @@
 # install python dep
+# ros2 colcon build --symlink-install
+# /usr/lib/python3/dist-packages/setuptools/command/install.py:34: SetuptoolsDeprecationWarning: setup.py install is deprecated. Use build and pip and other standards-based tools.
+setuptools==58.2.0
+# coppeliasim ROS2 dependencies
+xmlschema==3.0.2
+# coppeliasim
+pyzmq==25.1.2
+cbor2==5.6.2
