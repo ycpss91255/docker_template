@@ -6,3 +6,8 @@
 
 
 download coppeliasim.tar.xz save to config/coppeliasim
+
+This error may occur when you execute Gazebo for first time.
+----
+[ERROR] [spawn_entity.py-4]: process has died [pid 461, exit code 1, cmd '/opt/ros/humble/lib/gazebo_ros/spawn_entity.py -entity burger -file /opt/ros/humble/share/turtlebot3_gazebo/models/turtlebot3_burger/model.sdf -x 0.0 -y 0.0 -z 0.01 --ros-args'].
+----

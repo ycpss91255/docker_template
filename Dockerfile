@@ -122,6 +122,8 @@ RUN if [ "${HARDWARE}" == "x86_64" ]; then \
         ros-humble-dynamixel-sdk \
         ros-humble-turtlebot3-msgs \
         ros-humble-turtlebot3 \
+        ros-humble-turtlebot3-simulations \
+        ros-humble-turtlebot3-gazebo \
         ros-humble-hls-lfcd-lds-driver \
         libudev-dev \
         libc6:"${OPENCR_ARCH}" \
@@ -156,6 +158,7 @@ ARG ROS_ID=30
 ENV LDS_MODEL=LDS_01
 ENV OPENCR_PORT=/dev/opencr
 ENV OPENCR_MODEL=burger
+ENV TURTLEBOT3_MODEL=burger
 
 RUN ./config/pip/pip_setup.sh \
     && ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
