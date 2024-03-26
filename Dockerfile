@@ -16,13 +16,13 @@ ENV NVIDIA_DRIVER_CAPABILITIES all
 # ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # * Setup users and groups
-RUN groupadd --gid "${GID}" "${GROUP}" \
-    && useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" \
-    && mkdir -p /etc/sudoers.d \
-    && echo "${USER}:x:${UID}:${UID}:${USER},,,:/home/${USER}:${SHELL}" >> /etc/passwd \
-    && echo "${USER}:x:${UID}:" >> /etc/group \
-    && echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" \
-    && chmod 0440 "/etc/sudoers.d/${USER}"
+RUN groupadd --gid "${GID}" "${GROUP}" && \
+    useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" && \
+    mkdir -p /etc/sudoers.d && \
+    echo "${USER}:x:${UID}:${UID}:${USER},,,:/home/${USER}:${SHELL}" >> /etc/passwd && \
+    echo "${USER}:x:${UID}:" >> /etc/group && \
+    echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" && \
+    chmod 0440 "/etc/sudoers.d/${USER}"
 
 # * Replace apt urls
 # ? Change to tku
@@ -34,27 +34,24 @@ RUN sed -i 's@archive.ubuntu.com@ftp.tku.edu.tw@g' /etc/apt/sources.list
 ENV TZ=Asia/Taipei
 RUN ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
 
-# * Copy custom configuration
-# ? Requires docker version >= 17.09
-COPY --chmod=0775 ./${ENTRYPOINT_FILE} /entrypoint.sh
-COPY --chown="${USER}":"${GROUP}" --chmod=0775 config config
-# ? docker version < 17.09
-# COPY ./${ENTRYPOINT_FILE} /entrypoint.sh
-# COPY config config
-# RUN sudo chmod 0775 /entrypoint.sh && \
-    # sudo chown -R "${USER}":"${GROUP}" config \
-    # && sudo chmod -R 0775 config
+# * local config
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:UTF-8
 
 ############################### INSTALL #######################################
 # * Install packages
-RUN apt update \
-    && apt install -y --no-install-recommends \
+RUN apt update && \
+    apt install -y --no-install-recommends \
         sudo \
         git \
         htop \
         wget \
         curl \
         psmisc \
+        vim \
+        htop \
+        tree \
         # * Shell
         tmux \
         terminator \
@@ -63,24 +60,30 @@ RUN apt update \
         python3-dev \
         python3-setuptools \
         # * Work tools
-    && apt clean \
-    && rm -rf /var/lib/apt/lists/*
+        && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # gnome-terminal libcanberra-gtk-module libcanberra-gtk3-module \
 # dbus-x11 libglvnd0 libgl1 libglx0 libegl1 libxext6 libx11-6 \
 # display dep
 # libnss3 libgbm1 libxshmfence1 libdrm2 libx11-xcb1 libxcb-*-dev
 
-RUN ./config/pip/pip_setup.sh
 
 ############################## USER CONFIG ####################################
+# * Copy custom configuration
+# ? Requires docker version >= 17.09
+COPY --chmod=0775 ./${ENTRYPOINT_FILE} /entrypoint.sh
+COPY --chown="${USER}":"${GROUP}" --chmod=0775 config config
+
 # * Switch user to ${USER}
 USER ${USER}
 
-RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
-    && ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" \
-    && ./config/shell/tmux/tmux_setup.sh "${USER}" "${GROUP}" \
-    && sudo rm -rf /config
+RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" && \
+    ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" && \
+    ./config/shell/tmux/tmux_setup.sh "${USER}" "${GROUP}" && \
+    ./config/pip/pip_setup.sh && \
+    sudo rm -rf /config
 
 # * Switch workspace to ~/work
 RUN sudo mkdir -p /home/"${USER}"/work
