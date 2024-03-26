@@ -6,7 +6,6 @@ ARG GROUP=initial
 ARG UID=1000
 ARG GID="${UID}"
 ARG SHELL=/bin/bash
-# TODO: use Hardware parameter
 ARG HARDWARE=x86_64
 ARG ENTRYPOINT_FILE=entrypint.sh
 
@@ -16,13 +15,13 @@ ENV NVIDIA_DRIVER_CAPABILITIES all
 # ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # * Setup users and groups
-RUN groupadd --gid "${GID}" "${GROUP}" \
-    && useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" \
-    && mkdir -p /etc/sudoers.d \
-    && echo "${USER}:x:${UID}:${UID}:${USER},,,:/home/${USER}:${SHELL}" >> /etc/passwd \
-    && echo "${USER}:x:${UID}:" >> /etc/group \
-    && echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" \
-    && chmod 0440 "/etc/sudoers.d/${USER}"
+RUN groupadd --gid "${GID}" "${GROUP}" && \
+    useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" && \
+    mkdir -p /etc/sudoers.d && \
+    echo "${USER}:x:${UID}:${UID}:${USER},,,:/home/${USER}:${SHELL}" >> /etc/passwd && \
+    echo "${USER}:x:${UID}:" >> /etc/group && \
+    echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" && \
+    chmod 0440 "/etc/sudoers.d/${USER}"
 
 # * Replace apt urls
 # ? Change to tku
@@ -41,8 +40,9 @@ ENV LANGUAGE en_US:UTF-8
 
 ############################### INSTALL #######################################
 # * Install packages
-RUN apt update \
-    && apt install -y --no-install-recommends \
+
+RUN apt update && \
+    apt install -y --no-install-recommends \
         sudo \
         locales \
         locales-all \
@@ -69,37 +69,55 @@ RUN apt update \
         # xz-utils \
         # * ros2
         software-properties-common \
-        # * Work tools
-    && apt clean \
-    && rm -rf /var/lib/apt/lists/*
+        # dev tools
+        libgtest-dev \
+        # * run tools
+        libserial-dev \
+        libspdlog-dev \
+        && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # # * Install coppeliasim
 # ARG COPPELIASIM_DIR="/home/${USER}/coppeliasim"
 # # * Copy custom configuration
 # COPY --chown="${USER}":"${GROUP}" --chmod=0775 config/coppeliasim .coppeliasim
-# RUN mkdir -p "${COPPELIASIM_DIR}" \
-#     && chown "${USER}":"${GROUP}" "${COPPELIASIM_DIR}" \
-#     && tar Jvxf .coppeliasim/*.tar.xz -C "${COPPELIASIM_DIR}" --strip-components=1 \
-#     && rm -rf .coppeliasim
+# RUN mkdir -p "${COPPELIASIM_DIR}" && \
+#     chown "${USER}":"${GROUP}" "${COPPELIASIM_DIR}" && \
+#     tar Jvxf .coppeliasim/*.tar.xz -C "${COPPELIASIM_DIR}" --strip-components=1 && \
+#     ./.coppeliasim/coppeliasim_setup.sh "${USER}" "${GROUP}" && \
+#     rm -rf .coppeliasim
 
-# * Install ROS2 base
-        # ros-humble-ros-base \
+# * ROS Arguments
+ARG ROS_DISTRO=humble
+# LOCALHOST or GLOBAL
+ARG ROS_TYPE=LOCALHOST
+# ? https://docs.ros.org/en/humble/Concepts/About-Domain-ID.html
+# short 0~101 (turtlebot3 => 30)
+ARG ROS_ID=30
+# turtlebot3 
+ENV LDS_MODEL=LDS_01
+ENV TURTLEBOT3_MODEL=burger
+ENV OPENCR_MODEL="${TURTLEBOT3_MODEL}"
+ENV OPENCR_PORT=/dev/opencr
+
+COPY --chown="${USER}":"${GROUP}" --chmod=0775 config/ros2 .ros2
 
 ARG OPENCR_ARCH="i386"
-
+# * Install ROS2 base
 RUN if [ "${HARDWARE}" == "x86_64" ]; then \
         OPENCR_ARCH="i386"; \
     elif [ "${HARDWARE}" == "arrch64" ]; then \
         OPENCR_ARCH="armhf"; \
-    fi \
-    && dpkg --add-architecture "${OPENCR_ARCH}" \
-    && add-apt-repository -y universe \
-    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-        -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
-    | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-    && apt update \
-    && apt install -y --no-install-recommends \
+    fi && \
+    dpkg --add-architecture "${OPENCR_ARCH}" && \
+    add-apt-repository -y universe && \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && \
+    echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
+    apt update && \
+    apt install -y --no-install-recommends \
         # base tools
         ros-humble-desktop \
         ros-dev-tools \
@@ -107,6 +125,7 @@ RUN if [ "${HARDWARE}" == "x86_64" ]; then \
         python3-colcon-common-extensions \
         python3-colcon-argcomplete \
         python3-colcon-clean \
+        ros-humble-std-msgs \
         # coppeliasim and gazebo dep
         ros-humble-gazebo-msgs \
         # gazebo-classic
@@ -127,10 +146,13 @@ RUN if [ "${HARDWARE}" == "x86_64" ]; then \
         ros-humble-hls-lfcd-lds-driver \
         libudev-dev \
         libc6:"${OPENCR_ARCH}" \
-    && apt clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rosdep init \
-    && sudo -u ${USER} bash -c "rosdep update"
+        && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rosdep init && \
+    sudo -u ${USER} bash -c "rosdep update" && \
+    ./.ros2/ros2_setup.sh "${ROS_DISTRO}" "${ROS_TYPE}" "${ROS_ID}" && \
+    rm -rf ./.ros2
 
 ############################## USER CONFIG ####################################
 # * Copy custom configuration
@@ -147,26 +169,11 @@ COPY --chown="${USER}":"${GROUP}" --chmod=0775 config config
 # * Switch user to ${USER}
 USER ${USER}
 
-# * ROS Arguments
-ARG ROS_DISTRO=humble
-# LOCALHOST or GLOBAL
-ARG ROS_TYPE=LOCALHOST
-# ? https://docs.ros.org/en/humble/Concepts/About-Domain-ID.html
-# short 0~101 (turtlebot3 => 30)
-ARG ROS_ID=30
-# turtlebot3 
-ENV LDS_MODEL=LDS_01
-ENV OPENCR_PORT=/dev/opencr
-ENV OPENCR_MODEL=burger
-ENV TURTLEBOT3_MODEL=burger
-
-RUN ./config/pip/pip_setup.sh \
-    && ./config/shell/bash_setup.sh "${USER}" "${GROUP}" \
-    && ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" \
-    && ./config/shell/tmux/tmux_setup.sh "${USER}" "${GROUP}" \
-    && ./config/coppeliasim/coppeliasim_setup.sh "${USER}" "${GROUP}" \
-    && ./config/ros2/ros2_setup.sh "${ROS_DISTRO}" "${ROS_TYPE}" "${ROS_ID}" \
-    && sudo rm -rf /config
+RUN ./config/shell/bash_setup.sh "${USER}" "${GROUP}" && \
+    ./config/shell/terminator/terminator_setup.sh "${USER}" "${GROUP}" && \
+    ./config/shell/tmux/tmux_setup.sh "${USER}" "${GROUP}" && \
+    ./config/pip/pip_setup.sh && \
+    sudo rm -rf /config
 
 # * Switch workspace to ~/work
 RUN sudo mkdir -p /home/"${USER}"/work

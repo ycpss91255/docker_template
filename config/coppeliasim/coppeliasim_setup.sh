@@ -6,4 +6,7 @@
 printf "
 # CoppeliaSim ROOT DIR
 export COPPELIASIM_ROOT_DIR=/home/"${1}"/coppeliasim
+
+alias coppeliasim='/home/"${1}"/coppeliasim/coppeliaSim.sh'
+
 " >>/home/"${1}"/.bashrc
