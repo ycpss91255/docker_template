@@ -3,6 +3,8 @@
 # Get dependent parameters
 source "$(dirname "$(readlink -f "${0}")")/get_param.sh"
 
+# docker system prune -f
+
 # Build docker images
 docker build -t "${DOCKER_HUB_USER}"/"${IMAGE}" \
     --build-arg USER="${user}" \

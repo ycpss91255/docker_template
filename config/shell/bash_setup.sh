@@ -11,9 +11,6 @@ echo 'Hello Docker!'
 alias eb='vim ~/.bashrc'
 alias sb='source ~/.bashrc && \
     echo "You source user config!"'
-alias wb='source ~/work/devel/setup.bash && \
-    echo "You source workspace config!"'
-
 EOF
 
 # Write Color and git branch to bashrc
