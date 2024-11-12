@@ -79,11 +79,14 @@ RUN echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc
     apt update && \
     apt install -y --no-install-recommends \
         ros-noetic-desktop-full \
+        ros-noetic-xacro \
         python3-catkin-tools \
         python3-rosdep \
         python3-rosinstall \
         python3-rosinstall-generator \
         python3-wstool \
+        python3-tk \
+        liburdfdom-tools \
         && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* && \

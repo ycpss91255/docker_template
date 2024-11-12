@@ -1,1 +1,2 @@
 # install python dep
+pretty_errors==1.2.25
