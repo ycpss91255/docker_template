@@ -49,6 +49,7 @@ RUN apt update && \
         curl \
         git \
         htop \
+        less \
         locales \
         locales-all \
         lsb-release \
