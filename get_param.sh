@@ -171,7 +171,8 @@ function get_system_info() {
     hardware="$(uname -m)"
 
     # Print out the values of user, group, uid, gid and hardware
-    printf "%s %s %s %d %d %s" "${DOCKER_HUB_USER}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
+    # printf "%s %s %s %d %d %s" "${DOCKER_HUB_USER}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
+    printf "%s %s %d %d %s" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
 }
 
 # This function sets the Dockerfile name based on the directory path and hardware architecture
@@ -304,7 +305,7 @@ done
 FILE_DIR=$(dirname "$(readlink -f "${0}")")
 
 IFS='.' read -r GPU_FLAG COMPOSE_GPU_FLAG COMPOSE_GPU_CAPABILITIES <<< "$(check_nvidia)"
-read -r DOCKER_HUB_USER user group uid gid hardware <<<"$(get_system_info)"
+read -r user group uid gid hardware <<<"$(get_system_info)"
 IMAGE="$(set_image_name "${FILE_DIR}")"
 WS_PATH="$(get_workdir "${FILE_DIR}" "${IMAGE}")"
 DOCKERFILE_NAME=$(set_dockerfile "${FILE_DIR}" "${hardware}")
