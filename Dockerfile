@@ -35,9 +35,15 @@ ENV TZ=Asia/Taipei
 RUN ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
 
 # * local config
-ENV LC_ALL en_US.UTF-8
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:UTF-8
+# NOTE: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+# RUN apt update && \
+#     apt inatall -y --no-install-recommends \
+#         locales && \
+#     locale-gen en_US.UTF-8 && \
+#     update-locale LANG=en_US.UTF-8
+# ENV LC_ALL en_US.UTF-8
+# ENV LANG en_US.UTF-8
+# ENV LANGUAGE en_US:UTF-8
 
 ############################### INSTALL #######################################
 # * Install packages

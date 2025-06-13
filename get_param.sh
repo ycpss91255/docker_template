@@ -150,13 +150,12 @@ function get_system_info() {
     # Try to retrieve the current user from Docker using the `docker info`
     # command and store it in the `DOCKER_HUB_USER` variable
     # If that fails, fall back to using the `id` command to get the current user
-    # BUG: computer user name is not equal to docker user name
-    # DOCKER_INFO_NAME=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
-    # if [[ -z "${DOCKER_INFO_NAME}" ]]; then
-    #     DOCKER_HUB_USER="$(id -un)"
-    # else
-    #     DOCKER_HUB_USER="${DOCKER_INFO_NAME}"
-    # fi
+    DOCKER_INFO_NAME=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
+    if [[ -z "${DOCKER_INFO_NAME}" ]]; then
+        DOCKER_HUB_USER="$(id -un)"
+    else
+        DOCKER_HUB_USER="${DOCKER_INFO_NAME}"
+    fi
 
     user="$(id -un)"
     group="$(id -gn)"
@@ -171,8 +170,7 @@ function get_system_info() {
     hardware="$(uname -m)"
 
     # Print out the values of user, group, uid, gid and hardware
-    # printf "%s %s %s %d %d %s" "${DOCKER_HUB_USER}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
-    printf "%s %s %d %d %s" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
+    printf "%s %s %s %d %d %s" "${DOCKER_HUB_USER}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
 }
 
 # This function sets the Dockerfile name based on the directory path and hardware architecture
@@ -305,7 +303,7 @@ done
 FILE_DIR=$(dirname "$(readlink -f "${0}")")
 
 IFS='.' read -r GPU_FLAG COMPOSE_GPU_FLAG COMPOSE_GPU_CAPABILITIES <<< "$(check_nvidia)"
-read -r user group uid gid hardware <<<"$(get_system_info)"
+read -r DOCKER_HUB_USER user group uid gid hardware <<<"$(get_system_info)"
 IMAGE="$(set_image_name "${FILE_DIR}")"
 WS_PATH="$(get_workdir "${FILE_DIR}" "${IMAGE}")"
 DOCKERFILE_NAME=$(set_dockerfile "${FILE_DIR}" "${hardware}")
