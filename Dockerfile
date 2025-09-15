@@ -8,7 +8,7 @@ ARG GID="${UID}"
 ARG SHELL=/bin/bash
 # TODO: use Hardware parameter
 ARG HARDWARE=x86_64
-ARG ENTRYPOINT_FILE=entrypint.sh
+ARG ENTRYPOINT_FILE=entrypoint.sh
 
 # * Env vars for the nvidia-container-runtime.
 ENV NVIDIA_VISIBLE_DEVICES=all
