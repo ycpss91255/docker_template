@@ -11,8 +11,8 @@ ARG HARDWARE=x86_64
 ARG ENTRYPOINT_FILE=entrypint.sh
 
 # * Env vars for the nvidia-container-runtime.
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES all
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
 # ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
 # * Setup users and groups
@@ -26,9 +26,9 @@ RUN groupadd --gid "${GID}" "${GROUP}" && \
 
 # * Replace apt urls
 # ? Change to tku
-RUN sed -i 's@archive.ubuntu.com@ftp.tku.edu.tw@g' /etc/apt/sources.list
+# RUN sed -i 's@archive.ubuntu.com@ftp.tku.edu.tw@g' /etc/apt/sources.list
 # ? Change to Taiwan
-# RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list
+RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list
 
 # * Time zone
 ENV TZ=Asia/Taipei
@@ -98,7 +98,7 @@ WORKDIR /home/"${USER}"/work
 # * Make SSH available
 EXPOSE 22
 
-ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
-# ENTRYPOINT [ "/entrypoint.sh", "tmux" ]
+# ENTRYPOINT [ "/entrypoint.sh", "terminator" ]
+ENTRYPOINT [ "/entrypoint.sh", "tmux" ]
 # ENTRYPOINT [ "/entrypoint.sh", "bash" ]
 # ENTRYPOINT [ "/entrypoint.sh" ]
