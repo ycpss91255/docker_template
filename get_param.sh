@@ -1,360 +1,294 @@
 #!/usr/bin/env bash
 
-# Function to set the Docker image name based on the directory path
+set -euo pipefail
+
+# Set docker image name based on the directory path
+#
+# Usage:
+#   set_image_name <outvar> <path>
+#
 #
 # Parameters:
-#    ${1}: the directory path to search for the Dockerfile
+#   <outvar>: variable name to store the image name
+#   <path>: the directory path to extract the image name from
 #
-# Returns:
-#    IMAGE: The name of the Docker image to be used
-#
-# This function first checks if the `docker` folder has a suffix, such as `docker_xxx`, and extracts the suffix
-# and store it in the `IMAGE` variable. If the `docker` folder has no suffix, it checks if the workspace folder
-# has a prefix, such as `xxx_ws`, and extracts the prefix and store it in the `IMAGE` variable. If the workspace
-# folder has no prefix/suffix, the image name is set to `unknown`. The function then returns the image name.
-#
-# If no Dockerfile is found in the directory, the function will not work correctly and will return an incorrect
-# image name.
-#
+# Examples:
+#   set_image_name "/home/user/projects/docker_maypp" IMAGE
+#   set_image_name "/home/user/projects/maypp_ws" IMAGE
 function set_image_name() {
-    # Check if the `docker` folder has a suffix, such as `docker_xxx`
-    # If yes, extract the suffix and store it in the `IMAGE` variable
-    IMAGE=$(echo "${1}" | awk -F/ '{
-            for (i=NF; i>0; i--) {
-                if ($i ~ /^docker_/) {
-                    sub(/^docker_/,"",$i);
-                    print $i;
-                    exit;
-                }
-            }
-        }')
+    local -n _outvar="${1:?"${FUNCNAME[0]}: missing outvar argument"}"
+    local _path="${2:?"${FUNCNAME[0]}: missing path argument"}"
 
-    # If the `docker` folder has no suffix, check if the workspace folder has a prefix, such as `xxx_ws`
-    # If yes, extract the prefix and store it in the `IMAGE` variable, and update the `WS_PATH` variable accordingly
-    if [[ -z "${IMAGE}" ]]; then
-        IMAGE=$(echo "${1}" | awk -F/ '{
-                for (i=NF; i>0; i--) {
-                    if ($i ~ /_ws$/) {
-                        sub(/_ws$/,"",$i);
-                        print $i;
-                        exit;
-                    }
-                }
-            }')
-    fi
+    local -a _path_array=()
+    local _found="" i
 
-    # If the workspace folder has no prefix/suffix, set the image name to `unknown`
-    # and the workspace path to the current directory
-    IMAGE="${IMAGE:-unknown}"
+    IFS='/' read -ra _path_array <<<"${_path}"
 
-    # echo the values of IMAGE
-    echo "${IMAGE}"
+    for (( i=${#_path_array[@]}-1 ; i>=0 ; i-- )); do
+        local _part="${_path_array[i]}"
+        # starts with 'docker_' or ends with '_ws'
+        if [[ ${_part} == docker_* ]]; then
+            _found="${_path_array[i]#docker_}"
+            break
+        elif [[ ${_part} == *_ws ]]; then
+            _found="${_path_array[i]%_ws}"
+            break
+        fi
+    done
+
+    _outvar="${_found:-unknown}"
+    _outvar="${_outvar,,}"
 }
 
-# Function to extract the path of the workspace folder
-# and store it in the `WS_PATH` variable
+# Get workspace '*_ws' path, if not found, return parent path
+#
+# Usage:
+#   get_workdir <outvar> <path>
 #
 # Parameters:
-#    ${1}: the directory path to extract the workspace folder from
+#   <outvar>: variable name to store the workspace path
+#   <path>: the directory path to extract the image name from
 #
-# Returns:
-#    WS_PATH: the path to the workspace folder
-#
-# If a workspace folder with the given prefix is found,
-# its path is stored in the `WS_PATH` variable.
-# Otherwise, the `WS_PATH` variable is set to the parent directory
-# of the given directory path.
-#
+# Examples:
+#   get_workdir "/home/user/projects/maypp_ws" WS_PATH
+#   get_workdir "/home/user/projects/docker_maypp" WS_PATH
 function get_workdir() {
-    WS_NAME=$(echo "${1}" | awk -F/ '{
-            for (i=NF; i>0; i--) {
-                if ($i ~ /_ws$/) {
-                    print $i;
-                    exit;
-                }
-            }
-        }')
+    local -n _outvar="${1:?"${FUNCNAME[0]}: missing outvar argument"}"
+    local _path="${2:?"${FUNCNAME[0]}: missing path argument"}"
 
-    if [[ -n "${WS_NAME}" ]]; then
-        # Extract the path of the workspace folder and store it in the `WS_PATH` variable
-        WS_PATH=$(echo "${1}" | awk -v ws="${WS_NAME}" -v found=0 -F/ '{
-                for (i=1; i<=NF; i++) {
-                    if ($i ~ /_ws$/){
-                        found=1;
-                        break;
-                    }
-                    printf "%s/", $i
-                }
-                if (found) printf "%s", ws
-            }')
-    else
-        # If no workspace folder is found based on the provided prefix, extract the path to the parent directory
-        WS_PATH="$(echo "${1}" | rev | cut -d '/' -f 2- | rev)"
+    local -a _path_array=()
+    local _is_abs=0 _workdir="" i="" j=""
+
+    # If the path is root, return "/"
+    if [[ "${_path}" == "/" ]]; then
+        _outvar="/"
+        return 0
     fi
 
-    # echo the values of WS_PATH
-    echo "${WS_PATH}"
-}
+    # Remove trailing slashes from the path
+    while [[ "${_path}" == */ ]]; do
+        _path="${_path%/}"
+    done
 
-# Function to check if GraphicsCard is NVIDIA and nvidia-docker2 or nvidia-container-runtime is installed
-#
-# Parameters:
-#    None
-#
-# Returns:
-#    GPU_FLAG: if NVIDIA graphics card and nvidia-docker2 or nvidia-container-runtime is installed, empty string otherwise
-#
-function check_nvidia() {
-    # if (lspci | grep -q VGA ||
-    #     lspci | grep -iq NVIDIA ||
-    #     lsmod | grep -q nvidia ||
-    #     nvidia-smi -L >/dev/null 2>&1 | grep -iq nvidia) &&
-    #     (command -v nvidia-smi >/dev/null 2>&1) &&
-    #     (command -v nvidia-docker >/dev/null 2>&1 ||
-    #         dpkg -l | grep -q nvidia-container-toolkit); then
-    if (dpkg -l | grep -q nvidia-docker || dpkg -l | grep -q nvidia-container-toolkit); then
-        # Used in Docker run shell script
-        GPU_FLAG="--gpus all"
+    # Check if the path is absolute
+    [[ "${_path}" == /* ]] && _is_abs=1
 
-        # Used in Docker compose shell script
-        COMPOSE_GPU_FLAG="nvidia"
-        COMPOSE_GPU_CAPABILITIES="gpu, utility"
+    # Split the path into an array using '/' as the delimiter
+    IFS='/' read -ra _path_array <<<"${_path}"
 
+    for (( i=${#_path_array[@]}-1 ; i>=0 ; i-- )); do
+        local _part="${_path_array[i]}"
+
+        [[ -z "${_part}" ]] && continue
+        # If the part end with '_ws'
+        if [[ "${_part}" == *_ws ]]; then
+            for (( j=0; j<=i; j++ )); do
+                [[ -z "${_path_array[j]}" ]] && continue
+                _workdir+="/${_path_array[j]}"
+            done
+
+            (( _is_abs )) || _workdir="${_workdir#/}"
+            _outvar="${_workdir:-/}"
+            return 0
+        fi
+    done
+
+    # If no workspace folder is found based on the provided prefix,
+    if [[ "$_path" == */* ]]; then
+        # Extract the path to the parent directory
+        _workdir="${_path%/*}"
+        [[ -z "${_workdir}" ]] && _workdir="/"
     else
-        # Used in Docker run shell script
-        GPU_FLAG=""
-
-        # Used in Docker compose shell script
-        NVIDIA_FLAG=""
-        GPU_CAPABILITIES=""
+        _workdir="."
     fi
 
-    # echo the values of GPU_FLAG
-    printf "%s.%s.%s" "${GPU_FLAG}" "${COMPOSE_GPU_FLAG}" "${COMPOSE_GPU_CAPABILITIES}"
+    _outvar="${_workdir}"
+    return 0
 }
 
-# Function to get system parameter, including user, group, UID, GID, hardware architecture
+# get system parameter, including user, group, UID, GID, hardware architecture, and GPU support
+#
+# Usage:
+#   get_system_info <docker_hub_user_outvar> <user_outvar> <group_outvar> <uid_outvar> <gid_outvar> <hardware_outvar> <gpu_flag_outvar>
 #
 # Parameters:
-#    None
+#   <docker_hub_user_outvar>: variable name to store the docker hub user name
+#   <user_outvar>: variable name to store the user name
+#   <group_outvar>: variable name to store the group name
+#   <uid_outvar>: variable name to store the user ID
+#   <gid_outvar>: variable name to store the group ID
+#   <hardware_outvar>: variable name to store the hardware architecture
+#   <gpu_flag_outvar>: variable name to store the gpu flag for docker run
 #
-# Returns:
-#    DOCKER_HUB_USER: If you have logged in to docker, it is the user name of docker hub
-#    user: the user of the current Docker environment or the user of the current system
-#    group: the group of the current user
-#    uid: the UID of the current user
-#    gid: the GID of the current user
-#    hardware: the hardware architecture of the current system
-#
+# Examples:
+#   get_system_info DOCKER_HUB_USER USER GROUP UID GID HARDWARE GPU_FLAG
 function get_system_info() {
+    local -n _docker_hub_user_outvar="${1:?"${FUNCNAME[0]}: missing docker_hub_user outvar argument"}"; shift
+    local -n _user_outvar="${1:?"${FUNCNAME[0]}: missing user outvar argument"}"; shift
+    local -n _group_outvar="${1:?"${FUNCNAME[0]}: missing group outvar argument"}"; shift
+    local -n _uid_outvar="${1:?"${FUNCNAME[0]}: missing uid outvar argument"}"; shift
+    local -n _gid_outvar="${1:?"${FUNCNAME[0]}: missing gid outvar argument"}"; shift
+    local -n _hardware_outvar="${1:?"${FUNCNAME[0]}: missing hardware outvar argument"}"; shift
+    local -n _gpu_flag_outvar="${1:?"${FUNCNAME[0]}: missing gpu flag outvar argument"}"
+
+    local _docker_info_name=""
+
     # Try to retrieve the current user from Docker using the `docker info`
     # command and store it in the `DOCKER_HUB_USER` variable
+    _docker_info_name=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
     # If that fails, fall back to using the `id` command to get the current user
-    DOCKER_INFO_NAME=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
-    if [[ -z "${DOCKER_INFO_NAME}" ]]; then
-        DOCKER_HUB_USER="$(id -un)"
+    _docker_hub_user_outvar="${_docker_info_name:-$(id -un)}"
+
+    _user_outvar="${USER:-$(id -un)}"
+    _group_outvar="$(id -gn)"
+    _uid_outvar="$(id -u)"
+    _gid_outvar="$(id -g)"
+
+    _hardware_outvar="$(uname -m)"
+
+    # NOTE: maybe add check nvidia-docker2 or nvidia-container-runtime?
+    local _pkg="nvidia-container-toolkit"
+    if dpkg-query -W -f='${db:Status-Abbrev}\n' -- "${_pkg}" 2>/dev/null | grep -q '^ii'; then
+        # Used in Docker run shell script
+        _outvar="--gpus all"
+
+        # TODO: wait check docker compose flag
+        # Used in Docker compose shell script
+        # COMPOSE_GPU_FLAG="nvidia"
+        # COMPOSE_GPU_CAPABILITIES="gpu, utility"
     else
-        DOCKER_HUB_USER="${DOCKER_INFO_NAME}"
+        # Used in Docker run shell script
+       _outvar=""
+
+        # Used in Docker compose shell script
+        # COMPOSE_GPU_FLAG="nvidia"
+        # COMPOSE_GPU_CAPABILITIES="gpu, utility"
     fi
-
-    user="$(id -un)"
-    group="$(id -gn)"
-
-    # Retrieve the UID of the current user using the `id` command and store it in the `uid` variable
-    uid="$(id -u)"
-
-    # Retrieve the GID of the current user using the `id` command and store it in the `gid` variable
-    gid="$(id -g)"
-
-    # Retrieve the hardware architecture of the current system using the `uname` command and store it in the `hardware` variable
-    hardware="$(uname -m)"
-
-    # Print out the values of user, group, uid, gid and hardware
-    printf "%s %s %s %d %d %s" "${DOCKER_HUB_USER}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}"
 }
 
-# This function sets the Dockerfile name based on the directory path and hardware architecture
+# set the file name based on the directory path and hardware architecture
+#
+# Usage:
+#  set_file <options> [--] <outvar> <file_name> <path> <hardware>
+#
+# Options:
+#   --prefix    | -p  file prefix
+#   --extension | -e  file extension, default is empty (optional)
 #
 # Parameters:
-#    ${1}: the directory path to search for the Dockerfile
-#    ${2}: the hardware architecture
+#   <_outvar>: variable name to store the file name
+#   <path>: the directory path to search for the file
+#   <hardware>: the hardware architecture (e.g., x86_64, arm64
 #
-# Returns:
-#    DOCKERFILE_NAME: The name of the Dockerfile to be used
-#
-# Exit codes:
-#    1: Dockerfile file not found
-#    2: Incorrect naming format of Dockerfile file
-#
-# If no Dockerfile is found in the directory, an error message is displayed and the script exits.
-# If only one Dockerfile is found, it is returned.
-# If a Dockerfile with the architecture suffix is found, it is returned.
-# Otherwise, the default Dockerfile is returned.
-#
-function set_dockerfile() {
-    readarray -t file_list < <(find "${1}" -maxdepth 1 -type f -name "Dockerfile*" -printf "%f\n")
+# Examples:
+function set_file() {
+    local _parsed=""
+    local _short_opts="p:e:"
+    local _long_opts="prefix:,extension:"
 
-    # Check if there is no Dockerfile file
-    if [[ ${#file_list[@]} -eq 0 ]]; then
-        exit 1
+    if ! _parsed=$(getopt -o "${_short_opts}" --long "${_long_opts}" -n "${FUNCNAME[0]}" -- "$@"); then
+        printf "Usage: %s <options> [--] <outvar> <file_name> <path> <hardware>\n" "${FUNCNAME[0]}" >&2
+    fi
+
+    eval set -- "${_parsed}"
+
+    local _prefix="" _ext=""
+
+    while true; do
+        case "$1" in
+            -p | --prefix)
+                _prefix="$2"; shift 2;;
+            -e | --extension)
+                _ext="$2"; shift 2;;
+            --) shift; break ;;
+            *) break ;;
+        esac
+    done
+
+    [[ -n ${_ext} && ! ${_ext} =~ ^\. ]] && _ext=".${_ext}"
+
+    local -n _outvar="${1:?"${FUNCNAME[0]}: missing outvar argument"}"; shift
+    local _path="${1:?"${FUNCNAME[0]}: missing path argument"}"; shift
+    local _hardware="${1:?"${FUNCNAME[0]}: missing hardware argument"}"
+
+    local -a _file_list=()
+    local _file=""
+
+    readarray -t _file_list < <(find "${_path}" -maxdepth 1 -type f -name "${_prefix}*${_ext}" -printf "%f\n")
+
+    # Check if there is no specific file found
+    if [[ ${#_file_list[@]} -eq 0 ]]; then
+        printf "No %s file found in the directory: %s\n" "${_prefix}${_ext}" "${_path}" >&2
+        return 1
     else
-        for file in "${file_list[@]}"; do
-            # Make sure the Dockerfile is in the current directory
-            if [[ ${file} == "Dockerfile" ]]; then
-                DOCKERFILE_NAME="Dockerfile"
-                break
-            # Make sure the Dockerfile with the architecture suffix is in the current directory
-            elif [[ ${file} == "Dockerfile_${2}" ]]; then
-                DOCKERFILE_NAME="Dockerfile_${2}"
-                break
+        for _file in "${_file_list[@]}"; do
+            # Check for exact match with hardware suffix
+            if [[ ${_file} == "${_prefix}_${_hardware}${_ext}" || ${_file} == "${_prefix}.${_hardware}${_ext}" ]]; then
+                _outvar="${_file}"
+                return 0
+            # Check for exact match without hardware suffix
+            elif [[ ${_file} == "${_prefix}${_ext}" ]]; then
+                _outvar="${_file}"
+                return 0
+            # Check for other suffix match
+            elif [[ ${_file} == ${_prefix}_*${_ext} || ${_file} == ${_prefix}.*${_ext} ]]; then
+                _outvar="${_file}"
+                return 0
             fi
         done
     fi
-
-    # If none of the above conditions are true, print an error message and exit
-    if [[ -z ${DOCKERFILE_NAME} ]]; then exit 2; fi
-
-    # echo the values of DOCKERFILE_NAME
-    echo "${DOCKERFILE_NAME}"
 }
 
-
-# This function sets the entrypoint.sh name based on the directory path and hardware architecture
-#
-# Parameters:
-#    ${1}: the directory path to search for the entrypoint.sh
-#    ${2}: the hardware architecture
-#
-# Returns:
-#    ENTRYPOINT_FILE: The name of the entrypoint.sh to be used
-# Exit codes:
-#    1: entrypoint.sh file not found
-#    2: Incorrect naming format of entrypoint.sh file
-#
-# If no entrypoint.sh is found in the directory, an error message is displayed and the script exits.
-# If only one entrypoint.sh is found, it is returned.
-# If a entrypoint.sh with the architecture suffix is found, it is returned.
-# Otherwise, the default entrypoint.sh is returned.
-#
-function set_entrypoint() {
-    readarray -t file_list < <(find "${1}" -maxdepth 1 -type f -name "entrypoint*" -printf "%f\n")
-
-    # Check if there is no entrypoint file
-    if [[ ${#file_list[@]} -eq 0 ]]; then
-        exit 1
-    else
-        for file in "${file_list[@]}"; do
-            # Make sure the entrypoint.sh is in the current directory
-            if [[ ${file} == "entrypoint.sh" ]]; then
-                ENTRYPOINT_FILE="entrypoint.sh"
-                break
-            # Make sure the entrypoint.sh with the architecture suffix is in the current directory
-            elif [[ ${file} == "entrypoint_${2}.sh" ]]; then
-                ENTRYPOINT_FILE="entrypoint_${2}.sh"
-                break
-            fi
-        done
-    fi
-
-    # If none of the above conditions are true, print an error message and exit
-    if [[ -z ${ENTRYPOINT_FILE} ]]; then exit 2; fi
-
-    # echo the values of ENTRYPOINT_FILE
-    echo "${ENTRYPOINT_FILE}"
-}
 ################################ MAIN ##########################################
-# Analyze the user input parameters to make thecorresponding action
-ARGS=$(getopt \
-    -o h \
-    --long debug,help \
-    -- "$@")
-eval set -- "${ARGS}"
+function main() {
+    local _parsed=""
+    local _short_opts=""
+    local _long_opts="debug"
 
-while true; do
-    case "${1}" in
-    --debug)
-        DEBUG=true
-        shift
-        ;;
-    -h | --help)
-        echo "Usage: ${0} [OPTION]"
-        echo " Options:"
-        echo "     --debug    Enable debug mode"
-        echo " -h, --help     Show this help massage and exit"
-        exit 0
-        ;;
-    --)
-        shift
-        break
-        ;;
-    *)
-        echo "Unknown option: ${1}"
-        exit 1
-        ;;
-    esac
-done
+    if ! _parsed=$(getopt -o "${_short_opts}" --long "${_long_opts}" -n "${FUNCNAME[0]}" -- "$@"); then
+        printf "Usage: %s [options]\n" "${FUNCNAME[0]}" >&2
+    fi
 
-# $DEBUG && set -x
+    eval set -- "${_parsed}"
 
-# TODO: wait check
-# Start sharing xhost
-# xhost +local:root
+    local _debug=false
 
-FILE_DIR=$(dirname "$(readlink -f "${0}")")
+    while true; do
+        case "$1" in
+            --debug)
+                _debug=true; shift ;;
+            --) shift; break ;;
+            *) break ;;
+        esac
+    done
 
-IFS='.' read -r GPU_FLAG COMPOSE_GPU_FLAG COMPOSE_GPU_CAPABILITIES <<< "$(check_nvidia)"
-read -r DOCKER_HUB_USER user group uid gid hardware <<<"$(get_system_info)"
-IMAGE="$(set_image_name "${FILE_DIR}")"
-WS_PATH="$(get_workdir "${FILE_DIR}" "${IMAGE}")"
-DOCKERFILE_NAME=$(set_dockerfile "${FILE_DIR}" "${hardware}")
-set_dockerfile_exit_status=$?
+    local _script_path=""
+    _script_path="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
-ENTRYPOINT_FILE=$(set_entrypoint "${FILE_DIR}" "${hardware}")
-set_entrypoint_exit_status=$?
+    image="" container=""
+    ws_path=""
+    docker_hub_user="" user="" group="" uid="" gid="" hardware="" gpu_flag=""
+    dockerfile_name="" entrypoint_file=""
 
-# Set the container name to be the same as the image name
-CONTAINER="${IMAGE}"
+    set_image_name image "${_script_path}"
+    container="${image}"
 
-if [ "${DEBUG}" = true ]; then
-    echo "DOCKER_HUB_USER=${DOCKER_HUB_USER}"
-    echo "user=${user}"
-    echo "group=${group}"
-    echo "uid=${uid}"
-    echo "gid=${gid}"
-    echo -e "hardware=${hardware}\n"
+    get_workdir ws_path "${_script_path}"
 
-    echo "FILE_DIR=${FILE_DIR}"
-    echo "WS_PATH=${WS_PATH}"
-    echo "IMAGE=${IMAGE}"
-    echo -e "CONTAINER=${CONTAINER}\n"
+    get_system_info docker_hub_user user group uid gid hardware gpu_flag
 
-    echo "DOCKERFILE_NAME=${DOCKERFILE_NAME}"
-    echo -e "ENTRYPOINT_FILE=${ENTRYPOINT_FILE}"
+    set_file --prefix "Dockerfile" -- dockerfile_name "${_script_path}" "${hardware}"
+    set_file --prefix "entrypoint" -e "sh" -- entrypoint_file "${_script_path}" "${hardware}"
 
-    echo "GPU_FLAG=${GPU_FLAG}"
-    echo "COMPOSE_GPU_FLAG=${COMPOSE_GPU_FLAG}"
-    echo "COMPOSE_GPU_CAPABILITIES=${COMPOSE_GPU_CAPABILITIES}"
-fi
+    if [ "${_debug}" == true ]; then
+        printf "image: %s, container: %s\n" "${image}" "${container}"
+        printf "ws_path: %s\n" "${ws_path}"
+        printf "docker_hub_user: %s, user: %s, group: %s, uid: %s, gid: %s, hardware: %s, gpu_flag: %s\n" \
+            "${docker_hub_user}" "${user}" "${group}" "${uid}" "${gid}" "${hardware}" "${gpu_flag:-null}"
+        printf "dockerfile: %s\n" "${dockerfile_name}"
+        printf "entrypoint: %s\n" "${entrypoint_file}"
+    fi
+}
 
-# Check if the Dockerfile and entrypoint.sh files are found and set correctly
-if [ "${set_dockerfile_exit_status}" != 0 ] || [ "${set_entrypoint_exit_status}" != 0 ]; then
-    case "${set_dockerfile_exit_status}" in
-    1)
-        echo "Dockerfile file not found"
-        ;;
-    2)
-        echo "Incorrect naming format of Dockerfile file"
-        ;;
-    esac
 
-    case "${set_entrypoint_exit_status}" in
-    1)
-        echo "entrypoint.sh file not found"
-        ;;
-    2)
-        echo "Incorrect naming format of entrypoint.sh file"
-        ;;
-    esac
-
-    exit 1
-fi
+main "$@" || exit $?
