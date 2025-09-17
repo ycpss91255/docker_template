@@ -8,10 +8,7 @@ cat << 'EOF' >> /home/"${1}"/.bashrc
 echo 'Hello Docker!'
 
 # Commonly used aliases
-alias eb='vim ~/.bashrc'
-alias sb='source ~/.bashrc && \
-    echo "You source user config!"'
-alias wb='source ~/work/devel/setup.bash && \
+alias wb='source ~/work/install/local_setup.bash && \
     echo "You source workspace config!"'
 
 EOF
@@ -32,6 +29,33 @@ else
 fi
 
 unset color_prompt force_color_prompt
+EOF
+
+
+cat << 'EOF' >> /home/"${1}"/.bashrc
+if [ -f "/usr/share/colcon_cd/function/colcon_cd.sh" ]; then
+    source /usr/share/colcon_cd/function/colcon_cd.sh
+fi
+
+if [ -f "/etc/bash_completion" ]; then
+    source /etc/bash_completion
+fi
+
+if [ -f "/usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" ]; then
+    source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash
+fi
+
+if [ -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]; then
+    source "/opt/ros/${ROS_DISTRO}/setup.bash"
+    if [ ! -f "${HOME}/work/install/local_setup.bash" ]; then
+        echo "sourced /opt/ros/${ROS_DISTRO}/setup.bash"
+    fi
+fi
+
+if [ -f "${HOME}/work/install/local_setup.bash" ]; then
+    source "${HOME}/work/install/local_setup.bash"
+    echo "sourced ${HOME}/work/install/local_setup.bash"
+fi
 EOF
 
 chown "${1}":"${2}" /home/"${1}"/.bashrc
