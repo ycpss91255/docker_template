@@ -150,7 +150,7 @@ function get_system_info() {
     local _pkg="nvidia-container-toolkit"
     if dpkg-query -W -f='${db:Status-Abbrev}\n' -- "${_pkg}" 2>/dev/null | grep -q '^ii'; then
         # Used in Docker run shell script
-        _outvar="--gpus all"
+        _gpu_flag_outvar="--gpus all"
 
         # TODO: wait check docker compose flag
         # Used in Docker compose shell script
