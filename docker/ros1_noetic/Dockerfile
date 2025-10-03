@@ -88,6 +88,7 @@ RUN apt-get update && \
         # catkin tools (catkin build)
         python3-osrf-pycommon \
         python3-catkin-tools \
+        bash-completion \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
