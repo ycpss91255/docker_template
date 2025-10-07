@@ -85,11 +85,12 @@ RUN apt-get update && \
         python-pip \
         python-dev \
         python-setuptools \
+        pkg-config \
+        bash-completion \
         # catkin tools (catkin build)
         python-osrf-pycommon \
         python-catkin-pkg \
         python-catkin-tools \
-        bash-completion \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
