@@ -6,8 +6,8 @@ FILE_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "${FILE_PATH}/get_param.sh"
 
 # shellcheck disable=SC2154
-# xhost "+SI:localuser:${user}" >/dev/null
-xhost "+SI:localuser:root" >/dev/null
+xhost "+SI:localuser:${user}" >/dev/null
+# xhost "+SI:localuser:root" >/dev/null
 # xhost +local:root
 
 # shellcheck disable=SC2154
