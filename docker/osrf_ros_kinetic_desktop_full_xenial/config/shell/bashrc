@@ -3,10 +3,10 @@
 echo 'Hello Docker!'
 
 function alias_func() {
-    alias eb='vim ${HOME}/.bashrc'
-    alias sb='source ${HOME}/.bashrc && \
+    alias ebc='vim ${HOME}/.bashrc'
+    alias sbc='source ${HOME}/.bashrc && \
         echo "sourced ${HOME}/.bashrc"'
-    alias wb='source ${HOME}/work/install/local_setup.bash && \
+    alias swc='source ${HOME}/work/install/local_setup.bash && \
         echo "sourced ${HOME}/work/install/local_setup.bash"'
 }
 
