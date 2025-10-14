@@ -1,0 +1,68 @@
+= README
+:experimental:
+:toc: right
+:imagesdir: images
+
+[NOTE]
+====
+将 `<workspace_path>` 替换为实际的工作区文件夹路径
+====
+
+== 安装步骤 & 使用方法
+
+. 安装 Docker 引擎
+* https://docs.docker.com/engine/install/[Docker 引擎]
+* https://docs.docker.com/engine/install/linux-postinstall/[Linux 安装后设置]
+
+. 下载此 GitHub 仓库
++
+[source, shell]
+----
+git clone https://github.com/ycpss91255/docker_template
+----
+
+. 复制到您的项目目录
++
+[source, shell]
+----
+cp -r docker_template <workspace_path>/docker
+
+# 示例（使用 ROS 风格工作区）
+cp -r docker_template ~/test_ws/src/docker
+----
+
+. 调整 Dockerfile 以满足您的需求
+
+. 构建镜像并运行容器
++
+[source, shell]
+----
+cd <workspace_path>/docker
+
+# 构建 Docker 镜像
+./build.sh
+
+# 运行 Docker 容器
+./run.sh
+----
+
+. 享受 Docker
+
+== 使用时请注意以下事项
+
+. **镜像名称 (Image name)** 将遵循 `<user>/<image>` 格式，并按以下顺序确定：
+
+.. `<user>`:
+* Docker Hub 登录账号
+* 系统用户名
+
+.. `<image>`:
+* 来自 **docker** 文件夹名称的后缀：
+** **docker_monkey** 会生成镜像名称 **monkey**。
+** **docker_banana** 会生成镜像名称 **banana**。
+* 来自工作区文件夹名称的前缀：
+** **Microsoft_ws** 会生成镜像名称 **microsoft**。
+** **ubuntu_ws** 会生成镜像名称 **ubuntu**。
+* 如果两者都不存在，镜像名称将默认为 **unknown**。
+
+. **容器名称 (Container name)** 的命名规则与镜像名称相同。
