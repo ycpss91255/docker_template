@@ -1,0 +1,9 @@
+= README
+:experimental:
+:toc: right
+
+== Base image
+* osrf/ros:neotic-desktop-full-focal
+
+== Requirements
+
