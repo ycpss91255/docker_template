@@ -158,7 +158,7 @@ function get_system_info() {
         # COMPOSE_GPU_CAPABILITIES="gpu, utility"
     else
         # Used in Docker run shell script
-       _outvar=""
+       _gpu_flag_outvar=""
 
         # Used in Docker compose shell script
         # COMPOSE_GPU_FLAG="nvidia"
@@ -271,7 +271,7 @@ function main() {
     dockerfile_name="" entrypoint_file=""
 
     set_image_name image "${_script_path}"
-    container="${image}"
+    container="${image,,}"
 
     get_workdir ws_path "${_script_path}"
 

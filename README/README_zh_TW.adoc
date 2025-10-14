@@ -1,0 +1,68 @@
+= README
+:experimental:
+:toc: right
+:imagesdir: images
+
+[NOTE]
+====
+將 `<workspace_path>` 替換為實際的工作區資料夾路徑
+====
+
+== 安裝步驟 & 使用方法
+
+. 安裝 Docker 引擎
+* https://docs.docker.com/engine/install/[Docker 引擎]
+* https://docs.docker.com/engine/install/linux-postinstall/[Linux 安裝後設定]
+
+. 下載此 GitHub 儲存庫
++
+[source, shell]
+----
+git clone https://github.com/ycpss91255/docker_template
+----
+
+. 複製到您的專案目錄
++
+[source, shell]
+----
+cp -r docker_template <workspace_path>/docker
+
+# Example (usage a ROS-style workspace)
+cp -r docker_template ~/test_ws/src/docker
+----
+
+. 調整 Dockerfile 以滿足您的需求
+
+. 建構映像檔和執行容器
++
+[source, shell]
+----
+cd <workspace_path>/docker
+
+# Build Docker image
+./build.sh
+
+# Run Docker container
+./run.sh
+----
+
+. 享受 Docker
+
+== 使用時請注意以下事項
+
+. **映像檔名稱 (Image name)** 會遵循 `<user>/<image>` 格式，並依下列順序決定：
+
+.. `<user>`:
+* Docker Hub 登入帳號
+* 系統使用者名稱
+
+.. `<image>`:
+* 來自 **docker** 資料夾名稱的後綴:
+** **docker_monkey** 會產生映像檔名稱 **monkey**。
+** **docker_banana** 會產生映像檔名稱 **banana**。
+* 來自工作區資料夾名稱的前綴：
+** **Microsoft_ws** 會產生映像檔名稱 **microsoft**。
+** **ubuntu_ws** 會產生映像檔名稱 **ubuntu**。
+* 若兩者皆不存在，映像檔名稱將預設為 **unknown**。
+
+. **容器名稱 (Container name)** 的命名規則與映像檔名稱相同。

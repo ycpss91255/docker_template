@@ -47,22 +47,21 @@ RUN if getent group "${GID}" >/dev/null; then \
     chmod 0440 "/etc/sudoers.d/${USER}"
 
 # Setup locale ,timezone and Replace apt urls (Change to Taiwan)
-ENV TZ=Asia/Taipei
-ENV LC_ALL=en_US.UTF-8
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:UTF-8
+ENV TZ="Asia/Taipei"
+ENV LC_ALL="en_US.UTF-8"
+ENV LANG="en_US.UTF-8"
+ENV LANGUAGE="en_US:en"
 
-RUN apt-get update && \
+RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         tzdata \
         locales && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    locale-gen en_US.UTF-8 && \
-    update-locale LANG=en_US.UTF-8 && \
-    ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone && \
-    sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list
-
+    locale-gen "${LANG}" && \
+    update-locale LANG="${LANG}" && \
+    ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
 ############################### INSTALL #######################################
 # Install packages
 RUN apt-get update && \
@@ -104,12 +103,12 @@ COPY --chown="${USER}":"${GROUP}" --chmod=0755 config "${CONFIG_DIR}"
 # Switch user to ${USER}
 USER ${USER}
 
-# Setup shell, terminator, tmux, pip config
-RUN cat ${CONFIG_DIR}/shell/bashrc >> "${HOME}/.bashrc" && \
+# pip config, Setup shell, terminator, tmux
+RUN ${CONFIG_DIR}/pip/pip_setup.sh && \
+    cat ${CONFIG_DIR}/shell/bashrc >> "${HOME}/.bashrc" && \
     chown "${USER}":"${GROUP}" "${HOME}/.bashrc" && \
     ${CONFIG_DIR}/shell/terminator/terminator_setup.sh && \
     ${CONFIG_DIR}/shell/tmux/tmux_setup.sh && \
-    ${CONFIG_DIR}/pip/pip_setup.sh && \
     sudo rm -rf "${CONFIG_DIR}"
 
 # Switch workspace to ~/work
