@@ -1,4 +1,4 @@
-FROM osrf/ros:noetic-desktop-full-focal
+FROM osrf/ros:humble-desktop-full-jammy
 
 ############################## SYSTEM PARAMETERS ##############################
 ARG USER="initial"
@@ -62,6 +62,7 @@ RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list 
     locale-gen "${LANG}" && \
     update-locale LANG="${LANG}" && \
     ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
+
 ############################### INSTALL #######################################
 # Install packages
 RUN apt-get update && \
@@ -84,10 +85,10 @@ RUN apt-get update && \
         python3-pip \
         python3-dev \
         python3-setuptools \
-        # catkin tools (catkin build)
-        python3-osrf-pycommon \
-        python3-catkin-tools \
+        # auto complete
         bash-completion \
+        python3-colcon-argcomplete \
+        ros-${ROS_DISTRO}-ros2cli \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

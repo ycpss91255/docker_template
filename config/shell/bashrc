@@ -32,11 +32,32 @@ function color_git_branch() {
     fi
 }
 
+function ros_complete() {
+    local -ar files=(
+        "/etc/bash_completion::bash-completion"
+        "/usr/share/colcon_cd/function/colcon_cd.sh::ros-${ROS_DISTRO}-colcon-cd"
+        "/usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash::ros-${ROS_DISTRO}-colcon-argcomplete"
+    )
+
+    local entry=""
+    for entry in "${files[@]}"; do
+        local _file="${entry%%::*}"
+        local _pkg="${entry##*::}"
+
+        if [ -f "${_file}" ]; then
+            source "${_file}"
+        else
+            printf "%s not found!\n" "${_file}" >&2
+            printf "Please install: sudo apt install %s\n" "${_pkg}" >&2
+        fi
+    done
+}
+
 function ros_source() {
     local _ws="${1:-"${HOME}/work"}"
     local -ar _files=(
         "/opt/ros/${ROS_DISTRO}/setup.bash"
-        "${_ws}/devel/local_setup.bash"
+        "${_ws}/install/local_setup.bash"
     )
 
     local _file=""
@@ -44,18 +65,20 @@ function ros_source() {
     for _file in "${_files[@]}"; do
         if [ -f "$_file" ]; then
             source "${_file}"
-            printf "sourced %s\n" "${_file}" >&2
-            _sourced=1
+            printf "sourced %s\n" "${_file}"
+            _sourced+=1
         fi
     done
 
-    if [ $_sourced -eq 0 ]; then
-        local _file=""
-        for _file in "${_files[@]}"; do
-            printf "not found: %s\n" "${_file}" >&2
-        done
-    fi
+    [ $_sourced -gt 0 ] && return 0
+
+    local _file=""
+    for _file in "${_files[@]}"; do
+        [[ -f $_file ]] || printf "not sourced: %s\n" "$_file" >&2
+    done
 }
+
 alias_func
 color_git_branch
+ros_complete
 ros_source
