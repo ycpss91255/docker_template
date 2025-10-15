@@ -1,4 +1,4 @@
-FROM osrf/ros:noetic-desktop-full-focal
+FROM ubuntu:24.04
 
 ############################## SYSTEM PARAMETERS ##############################
 ARG USER="initial"
@@ -6,7 +6,6 @@ ARG GROUP="initial"
 ARG UID="1000"
 ARG GID="${UID}"
 ARG SHELL=/bin/bash
-# NOTE: not used
 ARG HARDWARE=x86_64
 
 # Env vars for nvidia-container-runtime.
@@ -85,10 +84,10 @@ RUN apt-get update && \
         python3-pip \
         python3-dev \
         python3-setuptools \
-        # catkin tools (catkin build)
-        python3-osrf-pycommon \
-        python3-catkin-tools \
+        # auto complete
         bash-completion \
+        python3-colcon-argcomplete \
+        ros-${ROS_DISTRO}-ros2cli \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -104,21 +103,23 @@ COPY --chown="${USER}":"${GROUP}" --chmod=0755 config "${CONFIG_DIR}"
 # Switch user to ${USER}
 USER ${USER}
 
-# Setup shell, terminator, tmux, pip config
+# Run commands using USER 
+RUN ${CONFIG_DIR}/pip/pip_setup.sh
+
+# Setup shell, terminator, tmux
 RUN cat ${CONFIG_DIR}/shell/bashrc >> "${HOME}/.bashrc" && \
     chown "${USER}":"${GROUP}" "${HOME}/.bashrc" && \
     ${CONFIG_DIR}/shell/terminator/terminator_setup.sh && \
     ${CONFIG_DIR}/shell/tmux/tmux_setup.sh && \
-    ${CONFIG_DIR}/pip/pip_setup.sh && \
     sudo rm -rf "${CONFIG_DIR}"
 
-# Switch workspace to ~/work
+# Switch workspace
 WORKDIR "${HOME}/work"
 
 # * Make SSH available
 EXPOSE 22
 
-# ENTRYPOINT ["/entrypoint.sh", "terminator"]
-# ENTRYPOINT ["/entrypoint.sh", "tmux"]
-ENTRYPOINT ["/entrypoint.sh", "bash"]
-# ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]
+# CMD ["terminator"]
+# CMD ["tmux"]
