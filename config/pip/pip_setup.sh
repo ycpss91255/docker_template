@@ -2,8 +2,9 @@
 
 set -eux -o pipefail
 
-# python3 -m pip install --upgrade --force-reinstall pip \
-# && pip3 install -r ./pip/requirements.txt
+# python3 -m pip install --upgrade --force-reinstall pip
+# pip3 install -r ./pip/requirements.txt
+
 file_dir=$(dirname "$(readlink -f "${0}")")
 
 pip install --upgrade --force-reinstall pip
