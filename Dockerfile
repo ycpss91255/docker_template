@@ -1,19 +1,22 @@
-FROM ubuntu:24.04
+# FROM ubuntu:24.04
+FROM nvidia/cuda:12.2.1-cudnn8-runtime-ubuntu24.04
 
 ############################## SYSTEM PARAMETERS ##############################
 ARG USER="initial"
 ARG GROUP="initial"
 ARG UID="1000"
 ARG GID="${UID}"
-ARG SHELL=/bin/bash
-ARG HARDWARE=x86_64
+ARG SHELL="/bin/bash"
+ARG HARDWARE="x86_64"
+ENV HOME="/home/${USER}"
 
 # Env vars for nvidia-container-runtime.
-ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_VISIBLE_DEVICES="all"
+ENV NVIDIA_DRIVER_CAPABILITIES="all"
 
 # SHELL ["/bin/bash", "-c"]
-SHELL ["/bin/bash", "-eux" , "-c"]
+# SHELL ["/bin/bash", "-xeu", "-c"]
+SHELL ["/bin/bash", "-x", "-euo", "pipefail", "-c"]
 
 # Setup users and groups
 RUN if getent group "${GID}" >/dev/null; then \
@@ -21,20 +24,16 @@ RUN if getent group "${GID}" >/dev/null; then \
         if [ "${existing_grp}" != "${GROUP}" ]; then \
             groupmod -n "${GROUP}" "${existing_grp}"; \
         fi; \
-    elif getent group "${USER}" >/dev/null; then \
-        groupmod -g "${GID}" "${USER}"; \
     else \
         groupadd -g "${GID}" "${USER}"; \
     fi; \
-    \
-    useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" && \
     \
     if getent passwd "${UID}" >/dev/null; then \
         existing_user="$(getent passwd "${UID}" | cut -d: -f1)"; \
         if [ "${existing_user}" != "${USER}" ]; then \
             usermod -l "${USER}" "${existing_user}"; \
         fi; \
-        usermod -g "${GID}" -s "${SHELL}" -d "/home/${USER}" -m  "${USER}"; \
+        usermod -g "${GID}" -s "${SHELL}" -d "${HOME}" -m "${USER}"; \
     elif id -u "${USER}" >/dev/null 2>&1; then \
         usermod -u "${UID}" -g "${GID}" -s "${SHELL}" -d "/home/${USER}" -m "${USER}"; \
     else \
@@ -46,21 +45,21 @@ RUN if getent group "${GID}" >/dev/null; then \
     chmod 0440 "/etc/sudoers.d/${USER}"
 
 # Setup locale ,timezone and Replace apt urls (Change to Taiwan)
-ENV TZ=Asia/Taipei
-ENV LC_ALL=en_US.UTF-8
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:UTF-8
+ENV TZ="Asia/Taipei"
+ENV LC_ALL="en_US.UTF-8"
+ENV LANG="en_US.UTF-8"
+ENV LANGUAGE="en_US:en"
 
-RUN apt-get update && \
+RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         tzdata \
         locales && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    locale-gen en_US.UTF-8 && \
-    update-locale LANG=en_US.UTF-8 && \
-    ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone && \
-    sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list
+    locale-gen "${LANG}" && \
+    update-locale LANG="${LANG}" && \
+    ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
 
 ############################### INSTALL #######################################
 # Install packages
@@ -86,31 +85,28 @@ RUN apt-get update && \
         python3-setuptools \
         # auto complete
         bash-completion \
-        python3-colcon-argcomplete \
-        ros-${ROS_DISTRO}-ros2cli \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 ############################## USER CONFIG ####################################
-ARG ENTRYPOINT_FILE=entrypoint.sh
+ARG ENTRYPOINT_FILE="entrypoint.sh"
 ARG CONFIG_DIR="/tmp/config"
-ENV HOME="/home/${USER}"
 
-COPY --chmod=0755 ./${ENTRYPOINT_FILE} /entrypoint.sh
-COPY --chown="${USER}":"${GROUP}" --chmod=0755 config "${CONFIG_DIR}"
+COPY --chmod=0755 "./${ENTRYPOINT_FILE}" "/entrypoint.sh"
+COPY --chown="${USER}":"${GROUP}" --chmod=0755 "config" "${CONFIG_DIR}"
 
-# Switch user to ${USER}
-USER ${USER}
+# Switch USER
+USER "${USER}"
 
-# Run commands using USER 
-RUN ${CONFIG_DIR}/pip/pip_setup.sh
+# Run commands as USER
+RUN "${CONFIG_DIR}"/pip/setup.sh
 
 # Setup shell, terminator, tmux
-RUN cat ${CONFIG_DIR}/shell/bashrc >> "${HOME}/.bashrc" && \
+RUN cat "${CONFIG_DIR}"/shell/bashrc >> "${HOME}/.bashrc" && \
     chown "${USER}":"${GROUP}" "${HOME}/.bashrc" && \
-    ${CONFIG_DIR}/shell/terminator/terminator_setup.sh && \
-    ${CONFIG_DIR}/shell/tmux/tmux_setup.sh && \
+    "${CONFIG_DIR}"/shell/terminator/setup.sh && \
+    "${CONFIG_DIR}"/shell/tmux/setup.sh && \
     sudo rm -rf "${CONFIG_DIR}"
 
 # Switch workspace
