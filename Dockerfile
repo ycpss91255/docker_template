@@ -1,5 +1,4 @@
-# FROM ubuntu:24.04
-FROM nvidia/cuda:12.2.1-cudnn8-runtime-ubuntu24.04
+FROM ubuntu:24.04
 
 ############################## SYSTEM PARAMETERS ##############################
 ARG USER="initial"
