@@ -1,7 +1,6 @@
 = README
 :experimental:
 :toc: right
-:imagesdir: images
 
 link:README/README_zh_CN.adoc[简体中文]
 link:README/README_zh_TW.adoc[繁體中文]

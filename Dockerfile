@@ -5,16 +5,17 @@ ARG USER="initial"
 ARG GROUP="initial"
 ARG UID="1000"
 ARG GID="${UID}"
-ARG SHELL=/bin/bash
-# NOTE: not used
-ARG HARDWARE=x86_64
+ARG SHELL="/bin/bash"
+ARG HARDWARE="x86_64"
+ENV HOME="/home/${USER}"
 
 # Env vars for nvidia-container-runtime.
-ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_VISIBLE_DEVICES="all"
+ENV NVIDIA_DRIVER_CAPABILITIES="all"
 
 # SHELL ["/bin/bash", "-c"]
-SHELL ["/bin/bash", "-eux" , "-c"]
+SHELL ["/bin/bash", "-xeu", "-c"]
+# SHELL ["/bin/bash", "-x", "-euo", "pipefail", "-c"]
 
 # Setup users and groups
 RUN if getent group "${GID}" >/dev/null; then \
@@ -22,20 +23,16 @@ RUN if getent group "${GID}" >/dev/null; then \
         if [ "${existing_grp}" != "${GROUP}" ]; then \
             groupmod -n "${GROUP}" "${existing_grp}"; \
         fi; \
-    elif getent group "${USER}" >/dev/null; then \
-        groupmod -g "${GID}" "${USER}"; \
     else \
         groupadd -g "${GID}" "${USER}"; \
     fi; \
-    \
-    useradd --gid "${GID}" --uid "${UID}" -ms "${SHELL}" "${USER}" && \
     \
     if getent passwd "${UID}" >/dev/null; then \
         existing_user="$(getent passwd "${UID}" | cut -d: -f1)"; \
         if [ "${existing_user}" != "${USER}" ]; then \
             usermod -l "${USER}" "${existing_user}"; \
         fi; \
-        usermod -g "${GID}" -s "${SHELL}" -d "/home/${USER}" -m  "${USER}"; \
+        usermod -g "${GID}" -s "${SHELL}" -d "${HOME}" -m "${USER}"; \
     elif id -u "${USER}" >/dev/null 2>&1; then \
         usermod -u "${UID}" -g "${GID}" -s "${SHELL}" -d "/home/${USER}" -m "${USER}"; \
     else \
@@ -59,9 +56,12 @@ RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list 
         locales && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    locale-gen "${LANG}" && \
-    update-locale LANG="${LANG}" && \
+    locale-gen "en_US.UTF-8" && \
+    update-locale LANG="en_US.UTF-8" && \
     ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
+
+    # locale-gen "${LANG}" && \
+    # update-locale LANG="${LANG}" && \
 
 ############################### INSTALL #######################################
 # Install packages
@@ -89,7 +89,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install ROS2 ${ROS_DISTRO}
+# Install ROS2
 ENV ROS_DISTRO=humble
 
 RUN apt-get update && \
@@ -127,7 +127,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         # Realsense2
         ros-${ROS_DISTRO}-librealsense2* \
-        ros-${ROS_DISTRO}-realsense2* \
+        # ros-${ROS_DISTRO}-realsense2* \
         # Hokuyo
         ros-${ROS_DISTRO}-laser-proc \
         ros-${ROS_DISTRO}-laser-filters \
@@ -162,39 +162,38 @@ RUN apt-get update && \
     chmod 644 /usr/local/lib/python3.*/dist-packages/cython.py 2>/dev/null || true
 
 ############################## USER CONFIG ####################################
-ARG ENTRYPOINT_FILE=entrypoint.sh
+ARG ENTRYPOINT_FILE="entrypoint.sh"
 ARG CONFIG_DIR="/tmp/config"
-ENV HOME="/home/${USER}"
 
-COPY --chmod=0755 ./${ENTRYPOINT_FILE} /entrypoint.sh
-COPY --chown="${USER}":"${GROUP}" --chmod=0755 config "${CONFIG_DIR}"
+COPY --chmod=0755 "./${ENTRYPOINT_FILE}" "/entrypoint.sh"
+COPY --chown="${USER}":"${GROUP}" --chmod=0755 "config" "${CONFIG_DIR}"
 
-# Switch user to ${USER}
-USER ${USER}
+# Switch USER
+USER "${USER}"
 
 # rosdep init and realsense udev rules
 RUN sudo rosdep init && \
     rosdep update && \
-    # install pip requirements
-    ${CONFIG_DIR}/pip/pip_setup.sh && \
+    ${CONFIG_DIR}/pip/setup.sh && \
     sudo pip uninstall -y numpy && \
-    # realsense udev rules
     sudo cp ${CONFIG_DIR}/realsense/99-realsense-libusb.rules /etc/udev/rules.d/99-realsense-libusb.rules
 
+
+
 # Setup shell, terminator, tmux
-RUN cat ${CONFIG_DIR}/shell/bashrc >> "${HOME}/.bashrc" && \
+RUN cat "${CONFIG_DIR}"/shell/bashrc >> "${HOME}/.bashrc" && \
     chown "${USER}":"${GROUP}" "${HOME}/.bashrc" && \
-    ${CONFIG_DIR}/shell/terminator/terminator_setup.sh && \
-    ${CONFIG_DIR}/shell/tmux/tmux_setup.sh && \
+    "${CONFIG_DIR}"/shell/terminator/setup.sh && \
+    "${CONFIG_DIR}"/shell/tmux/setup.sh && \
     sudo rm -rf "${CONFIG_DIR}"
 
-# Switch workspace to ~/work
+# Switch workspace
 WORKDIR "${HOME}/work"
 
 # * Make SSH available
 EXPOSE 22
 
-# ENTRYPOINT ["/entrypoint.sh", "terminator"]
-# ENTRYPOINT ["/entrypoint.sh", "tmux"]
-ENTRYPOINT ["/entrypoint.sh", "bash"]
-# ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]
+# CMD ["terminator"]
+# CMD ["tmux"]

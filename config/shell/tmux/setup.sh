@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eux -o pipefail
+set -x -eu -o pipefail
 
 function check_deps() {
     local -r _deps=("tmux" "git")
