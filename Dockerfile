@@ -84,6 +84,8 @@ RUN apt-get update && \
         python3-setuptools \
         # auto complete
         bash-completion \
+        python3-colcon-argcomplete \
+        ros-${ROS_DISTRO}-ros2cli \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
