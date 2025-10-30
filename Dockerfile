@@ -1,6 +1,9 @@
-FROM ubuntu:24.04
+ARG IMAGE="ubuntu:24.04"
 
-############################## SYSTEM PARAMETERS ##############################
+############################### system ###############################
+FROM "${IMAGE}" AS sys
+
+# User parameters
 ARG USER="initial"
 ARG GROUP="initial"
 ARG UID="1000"
@@ -49,7 +52,9 @@ ENV LC_ALL="en_US.UTF-8"
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 
-RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list && \
+RUN ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && \
+    echo "${TZ}" > /etc/timezone && \
+    sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         tzdata \
@@ -57,10 +62,11 @@ RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list 
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     locale-gen "${LANG}" && \
-    update-locale LANG="${LANG}" && \
-    ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
+    update-locale LANG="${LANG}"
 
-############################### INSTALL #######################################
+############################### base ###############################
+FROM sys AS base
+
 # Install packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -88,7 +94,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-############################## USER CONFIG ####################################
+############################### dev ###############################
+FROM base AS dev
+
 ARG ENTRYPOINT_FILE="entrypoint.sh"
 ARG CONFIG_DIR="/tmp/config"
 

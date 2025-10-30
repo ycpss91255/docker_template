@@ -5,9 +5,13 @@ FILE_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck disable=SC1091
 source "${FILE_PATH}/get_param.sh"
 
-# Build docker images
+# Build stage name
+# build_stage="base"
+# build_stage="sys"
+# build_stage="dev"
+# build_stage="runtime"
 
-# shellcheck disable=SC2154
+# Build docker images
 docker build -t "${docker_hub_user}"/"${image}" \
     --build-arg USER="${user}" \
     --build-arg GROUP="${group}" \
@@ -17,5 +21,6 @@ docker build -t "${docker_hub_user}"/"${image}" \
     --build-arg ENTRYPOINT_FILE="${entrypoint_file}" \
     -f "${FILE_PATH}"/"${dockerfile_name}" "${FILE_PATH}"
 
+#     --target="${build_stage}" \
 #     --progress=plain \
 #     --no-cache \
