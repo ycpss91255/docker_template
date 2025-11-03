@@ -42,7 +42,7 @@ docker run --rm \
 
 rm -f "${XAUTH}"
 
-if [ -z "${SSH_CONNECTION}" ]; then
+if [ -z "${SSH_CONNECTION:-}" ]; then
     xhost "-SI:localuser:${user}" >/dev/null
 fi
 
