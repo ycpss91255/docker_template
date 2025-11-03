@@ -5,7 +5,7 @@ FILE_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
 source "${FILE_PATH}/get_param.sh"
 
-if [ -z "${SSH_CONNECTION}" ]; then
+if [ -z "${SSH_CONNECTION:-}" ]; then
     xhost "+SI:localuser:${user}" >/dev/null
     # xhost "+SI:localuser:root" >/dev/null
     # xhost +local:root
