@@ -1,0 +1,51 @@
+# ROS1 bridge step
+
+## Step
+
+1. Clone the repository
++
+[source,bash]
+----
+git clone
+----
+
+2. run docker
++
+[source,bash]
+----
+cd docker
+
+./build.sh && ./run.sh
+----
+
+3. run ros1 bridge
++
+[source,bash]
+----
+# in docker container
+# source ros1
+# source /opt/ros/${ROS1_DISTRO}/setup.bash
+source /opt/ros/noetic/setup.bash
+
+# source ros2
+# source /opt/ros/${ROS2_DISTRO}/setup.bash
+source /opt/ros/foxy/setup.bash
+
+# run roscore
+roscore &
+
+# run ros1_bridge
+ros2 run ros1_bridge dynamic_bridge
+----
+
+4. if there is no bridge
++
+[source,bash]
+----
+# in docker container
+# source ros2
+# source /opt/ros/${ROS2_DISTRO}/setup.bash
+source /opt/ros/foxy/setup.bash
+
+ros2 topic echo <topic_name> &>/dev/null &
+----

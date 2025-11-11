@@ -1,4 +1,4 @@
-ARG IMAGE="ubuntu:24.04"
+ARG IMAGE="osrf/ros:foxy-desktop-focal"
 
 ############################### system ###############################
 FROM "${IMAGE}" AS sys
@@ -94,8 +94,25 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+############################### ros1 ###############################
+FROM base AS ros1
+
+ENV ROS_DISTRO=""
+
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' && \
+    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ros-noetic-desktop-full \
+        # ros2 tools
+        ros-foxy-ros1-bridge \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+
 ############################### dev ###############################
-FROM base AS dev
+FROM ros1 AS dev
 
 ARG ENTRYPOINT_FILE="entrypoint.sh"
 ARG CONFIG_DIR="/tmp/config"
