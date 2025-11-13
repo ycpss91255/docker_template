@@ -2,13 +2,14 @@
 
 # Get dependent parameters
 FILE_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-# shellcheck disable=SC1091
+
 source "${FILE_PATH}/get_param.sh"
 
-# shellcheck disable=SC2154
-xhost "+SI:localuser:${user}" >/dev/null
-# xhost "+SI:localuser:root" >/dev/null
-# xhost +local:root
+if [ -z "${SSH_CONNECTION:-}" ]; then
+    xhost "+SI:localuser:${user}" >/dev/null
+    # xhost "+SI:localuser:root" >/dev/null
+    # xhost +local:root
+fi
 
 XSOCK="/tmp/.X11-unix"
 XAUTH="/tmp/.docker.xauth"
@@ -42,6 +43,10 @@ docker run --rm \
     -it --name "${container}" "${docker_hub_user}"/"${image}"
 
 rm -f "${XAUTH}"
+
+if [ -z "${SSH_CONNECTION:-}" ]; then
+    xhost "-SI:localuser:${user}" >/dev/null
+fi
 
 # docker run --rm \
 #     --privileged \
