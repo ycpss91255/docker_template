@@ -35,6 +35,39 @@ RUN /ros_entrypoint.sh colcon build
 ############################## Runtime ####################################
 FROM ros:${ROS_DISTRO}-ros-${RUNTIME_TAG}-jammy AS runtime
 
+ARG USER="yunchien"
+ARG GROUP="yunchien"
+ARG UID="1000"
+ARG GID="${UID}"
+ARG SHELL="/bin/bash"
+ENV HOME="/home/${USER}"
+
+# Setup users and groups
+RUN if getent group "${GID}" >/dev/null; then \
+        existing_grp="$(getent group "${GID}" | cut -d: -f1)"; \
+        if [ "${existing_grp}" != "${GROUP}" ]; then \
+            groupmod -n "${GROUP}" "${existing_grp}"; \
+        fi; \
+    else \
+        groupadd -g "${GID}" "${USER}"; \
+    fi; \
+    \
+    if getent passwd "${UID}" >/dev/null; then \
+        existing_user="$(getent passwd "${UID}" | cut -d: -f1)"; \
+        if [ "${existing_user}" != "${USER}" ]; then \
+            usermod -l "${USER}" "${existing_user}"; \
+        fi; \
+        usermod -g "${GID}" -s "${SHELL}" -d "${HOME}" -m "${USER}"; \
+    elif id -u "${USER}" >/dev/null 2>&1; then \
+        usermod -u "${UID}" -g "${GID}" -s "${SHELL}" -d "/home/${USER}" -m "${USER}"; \
+    else \
+        useradd -u "${UID}" -g "${GID}" -s "${SHELL}" -m "${USER}"; \
+    fi; \
+    \
+    mkdir -p /etc/sudoers.d; \
+    echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}"; \
+    chmod 0440 "/etc/sudoers.d/${USER}"
+
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -42,6 +75,8 @@ RUN apt-get update && \
     && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+USER ${USER}
 
 # Copy install from builder
 ARG WS_PATH

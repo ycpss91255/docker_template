@@ -101,6 +101,7 @@ function run_container() {
 
     # Run docker container
     docker run --rm \
+        --privileged \
         --network=host \
         --ipc=host \
         -it --name "${container}" "${user}"/"${image}" \
