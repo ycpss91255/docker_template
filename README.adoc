@@ -1,0 +1,40 @@
+= README
+:experimental:
+:toc: right
+
+== Base image
+* ros:humble-ros-base-jammy (Builder stage)
+* ros:humble-ros-core-jammy (Runtime stage)
+
+== Using
+
+=== Use default configuration
+[source, bash]
+----
+cd <to_file_path>
+./docker_manager.sh
+----
+
+=== Use custom configuration
+
+1. Edit `config` as needed
++
+[NOTE]
+====
+* `$EDITOR` is your preferred text editor (e.g., vim, nano, code, etc.)
+====
++
+[source, bash]
+----
+$EDITOR config/params_ether.yaml
+$EDITOR config/params_ether_2nd.yaml
+$EDITOR config/params_serial.yaml
+----
+
+2. Run `docker_manager.sh` with custom configuration file
++
+[source, bash]
+----
+cd <to_file_path>
+./docker_manager.sh
+----
