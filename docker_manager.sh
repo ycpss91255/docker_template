@@ -152,7 +152,12 @@ function main() {
 
     if [[ ${_build} == true ]]; then
         printf "Starting Docker image build process...\n"
-        build_image "${_debug}" "${docker_args[@]}"
+
+        if ! build_image "${_debug}" "${docker_args[@]}"; then
+            printf "Docker image build process failed.\n" >&2
+            exit 1
+        fi
+
         printf "Docker image build process completed.\n"
 
         [ ${_run} == true ] && printf "\n\n"
@@ -160,7 +165,12 @@ function main() {
 
     if [[ ${_run} == true ]]; then
         printf "Starting Docker container run process...\n"
-        run_container "${_debug}" "${docker_args[@]}" "${cmd_args[@]}"
+
+        if ! run_container "${_debug}" "${docker_args[@]}" "${cmd_args[@]}"; then
+            printf "Docker container run process failed.\n" >&2
+            exit 1
+        fi
+
         printf "Docker container run process completed.\n"
     fi
 }
