@@ -82,6 +82,10 @@ function build_image() {
 
     # Build docker images
     docker build -t "${user}"/"${image}" \
+        --build-arg USER="$(id -un)" \
+        --build-arg GROUP="$(id -gn)" \
+        --build-arg UID="$(id -u)" \
+        --build-arg GID="$(id -g)" \
         --build-arg ENTRYPOINT_FILE="${entrypoint_file}" \
         -f "${FILE_PATH}"/"${dockerfile}" "${FILE_PATH}"
 }

@@ -35,8 +35,8 @@ RUN /ros_entrypoint.sh colcon build
 ############################## Runtime ####################################
 FROM ros:${ROS_DISTRO}-ros-${RUNTIME_TAG}-jammy AS runtime
 
-ARG USER="yunchien"
-ARG GROUP="yunchien"
+ARG USER="myuser"
+ARG GROUP="myuser"
 ARG UID="1000"
 ARG GID="${UID}"
 ARG SHELL="/bin/bash"
