@@ -3,31 +3,6 @@
 # Get dependent parameters
 FILE_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
-function set_image_name() {
-    local -n _outvar="${1:?"${FUNCNAME[0]}: missing outvar argument"}"
-    local _path="${2:?"${FUNCNAME[0]}: missing path argument"}"
-
-    local -a _path_array=()
-    local _found="" i
-
-    IFS='/' read -ra _path_array <<<"${_path}"
-
-    for (( i=${#_path_array[@]}-1 ; i>=0 ; i-- )); do
-        local _part="${_path_array[i]}"
-        # starts with 'docker_' or ends with '_ws'
-        if [[ ${_part} == docker_* ]]; then
-            _found="${_path_array[i]#docker_}"
-            break
-        elif [[ ${_part} == *_ws ]]; then
-            _found="${_path_array[i]%_ws}"
-            break
-        fi
-    done
-
-    _outvar="${_found:-unknown}"
-    _outvar="${_outvar,,}"
-}
-
 function set_file() {
     local _parsed=""
     local _short_opts="p:e:"
@@ -87,45 +62,70 @@ function set_file() {
 }
 
 function build_image() {
-    local -r docker_info_name=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
-    local -r docker_hub_user="${docker_info_name:-$(id -un)}"
+    local -r debug="$1"; shift
 
-    local image="", dockerfile_name="" entrypoint_file=""
+    local -r image="$1"; shift
+    local -r user="$1"; shift
 
-    set_image_name image "${FILE_PATH}"
+    local -r container="${image}"
 
-    set_file --prefix "Dockerfile" -- dockerfile_name "${FILE_PATH}" "x86_64"
+    local dockerfile="" entrypoint_file=""
+
+    set_file --prefix "Dockerfile" -- dockerfile "${FILE_PATH}" "x86_64"
     set_file --prefix "entrypoint" -e "sh" -- entrypoint_file "${FILE_PATH}" "x86_64"
 
-    # printf "Building Docker image: %s/%s\n" "${docker_hub_user}" "${image}"
-    # printf "Using Dockerfile: %s\n" "${dockerfile_name}"
-    # printf "Using Entrypoint file: %s\n" "${entrypoint_file}"
+    if [ "${debug}" = true ]; then
+        printf "Building Docker image: %s/%s\n" "${user}" "${image}"
+        printf "Using Dockerfile: %s\n" "${dockerfile}"
+        printf "Using Entrypoint file: %s\n" "${entrypoint_file}"
+    fi
 
     # Build docker images
-    docker build -t "${docker_hub_user}"/"${image}" \
+    docker build -t "${user}"/"${image}" \
         --build-arg ENTRYPOINT_FILE="${entrypoint_file}" \
-        -f "${FILE_PATH}"/"${dockerfile_name}" "${FILE_PATH}"
+        -f "${FILE_PATH}"/"${dockerfile}" "${FILE_PATH}"
 }
 
 function run_container() {
-    local -r docker_info_name=$(docker info 2>/dev/null | grep Username | cut -d ' ' -f 3)
-    local -r docker_hub_user="${docker_info_name:-$(id -un)}"
+    local -r debug="$1"; shift
 
-    local image="" container=""
+    local -r image="$1"; shift
+    local -r user="$1"; shift
 
-    set_image_name image "${FILE_PATH}"
-    container="${image}"
+    local -r container="${image}"
 
+    if [ "${debug}" = true ]; then
+        printf "Using Docker Image: %s\n" "${user}/${image}"
+        printf "Run Docker Container: %s\n" "${container}"
+    fi
+
+    # Run docker container
     docker run --rm \
         --network=host \
         --ipc=host \
-        -it --name "${container}" "${docker_hub_user}"/"${image}"
+        -it --name "${container}" "${user}"/"${image}" \
+            "$@"
 }
 
 function main() {
+    # image and container name
+    local ic_name="hokuyo_urg_node2"
+
+    # if not login docker hub, use local username
+    local -r docker_hub_user=$(
+        docker info 2>/dev/null | grep Username | cut -d ' ' -f 3
+    )
+    local -r user="${docker_hub_user:-$(id -un)}"
+
+    # All docker arguments
+    local -ar docker_args=(
+        "${ic_name}"
+        "${user}"
+    )
+
     local _parsed=""
     local _short_opts=""
-    local _long_opts="build,run"
+    local _long_opts="build,run,debug"
 
     if ! _parsed=$(getopt -o "${_short_opts}" --long "${_long_opts}" -n "${FUNCNAME[0]}" -- "$@"); then
         printf "Usage: %s [options]\n" "${FUNCNAME[0]}" >&2
@@ -133,7 +133,7 @@ function main() {
 
     eval set -- "${_parsed}"
 
-    local _build=true _run=true
+    local _build=true _run=true _debug=false
 
     while true; do
         case "$1" in
@@ -141,17 +141,27 @@ function main() {
                 _run=false; shift ;;
             --run)
                 _build=false; shift ;;
+            --debug)
+                _debug=true; shift ;;
             --) shift; break ;;
             *) break ;;
         esac
     done
 
+    local cmd_args=("$@")
+
     if [[ ${_build} == true ]]; then
-        build_image
+        printf "Starting Docker image build process...\n"
+        build_image "${_debug}" "${docker_args[@]}"
+        printf "Docker image build process completed.\n"
+
+        [ ${_run} == true ] && printf "\n\n"
     fi
 
     if [[ ${_run} == true ]]; then
-        run_container
+        printf "Starting Docker container run process...\n"
+        run_container "${_debug}" "${docker_args[@]}" "${cmd_args[@]}"
+        printf "Docker container run process completed.\n"
     fi
 }
 
