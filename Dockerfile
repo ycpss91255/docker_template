@@ -80,11 +80,11 @@ USER ${USER}
 
 # Copy install from builder
 ARG WS_PATH
-COPY --from=builder "${WS_PATH}/install" "${WS_PATH}/install"
+COPY --from=builder --chown="${USER}":"${GROUP}" "${WS_PATH}/install" "${WS_PATH}/install"
 
 # Copy local hokuyo configuration
 ARG CONFIG_PATH="config"
-COPY --chmod=0544 "./${CONFIG_PATH}" "/ros_ws/install/urg_node2/share/urg_node2/config"
+COPY --chmod=0544 --chown="${USER}":"${GROUP}" "./${CONFIG_PATH}" "/ros_ws/install/urg_node2/share/urg_node2/config"
 
 ARG ENTRYPOINT_FILE="entrypoint.sh"
 COPY --chmod=0755 "./${ENTRYPOINT_FILE}" "/entrypoint.sh"
