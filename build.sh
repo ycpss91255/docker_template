@@ -8,7 +8,7 @@ source "${FILE_PATH}/get_param.sh"
 # Build docker images
 
 # shellcheck disable=SC2154
-docker build -t "${docker_hub_user}"/"${image}" \
+docker build -t "${user}"/"${image}" \
     --build-arg USER="${user}" \
     --build-arg GROUP="${group}" \
     --build-arg UID="${uid}" \

@@ -1,21 +1,70 @@
-FROM osrf/ros:humble-desktop-full-jammy
+ARG ROS_DISTRO="humble"
+ARG BUILD_TAG="base"
+ARG RUNTIME_TAG="base"
+ARG UBUNTU_CODENAME="jammy"
 
-############################## SYSTEM PARAMETERS ##############################
+############################## system ##############################
+FROM ros:${ROS_DISTRO}-ros-${BUILD_TAG}-${UBUNTU_CODENAME} AS sys
+
+# librealsense dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        udev \
+        libudev-dev \
+        libusb-1.0-0-dev \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Build and install librealsense
+RUN git clone --depth 1 -b "v2.56.4" https://github.com/realsenseai/librealsense /tmp/librealsense && \
+    mkdir -p /tmp/librealsense/build && \
+    cd /tmp/librealsense/build && \
+    cmake /tmp/librealsense \
+        -DFORCE_RSUSB_BACKEND=ON \
+        -DBUILD_EXAMPLES=OFF \
+        -DBUILD_GRAPHICAL_EXAMPLES=OFF \
+        -DBUILD_WITHOUT_SYSTEM_LIBUSB=OFF && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    rm -rf /tmp/librealsense
+
+# realsense2-ros dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3-tqdm \
+        python3-requests \
+        ros-${ROS_DISTRO}-tf2-ros \
+        ros-${ROS_DISTRO}-cv-bridge \
+        ros-${ROS_DISTRO}-xacro \
+        ros-${ROS_DISTRO}-launch-pytest \
+        ros-${ROS_DISTRO}-image-transport \
+        ros-${ROS_DISTRO}-diagnostic-updater \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG WORKDIR="/ros_ws"
+WORKDIR ${WORKDIR}
+
+# Build and install realsense2-ros
+RUN git clone --depth 1 -b "4.56.4" https://github.com/realsenseai/realsense-ros.git "${WORKDIR}"/src/realsense-ros && \
+    /ros_entrypoint.sh colcon build
+
+
+ARG REALSENSE_RULE="99-realsense-libusb.rules"
+COPY ./config/${REALSENSE_RULE} "/etc/udev/rules.d/${REALSENSE_RULE}"
+
+############################## USER CONFIG ####################################
 ARG USER="initial"
 ARG GROUP="initial"
 ARG UID="1000"
 ARG GID="${UID}"
-ARG SHELL="/bin/bash"
 ARG HARDWARE="x86_64"
+ARG SHELL="/bin/bash"
 ENV HOME="/home/${USER}"
-
-# Env vars for nvidia-container-runtime.
-ENV NVIDIA_VISIBLE_DEVICES="all"
-ENV NVIDIA_DRIVER_CAPABILITIES="all"
-
-# SHELL ["/bin/bash", "-c"]
-# SHELL ["/bin/bash", "-xeu", "-c"]
-SHELL ["/bin/bash", "-x", "-euo", "pipefail", "-c"]
 
 # Setup users and groups
 RUN if getent group "${GID}" >/dev/null; then \
@@ -43,80 +92,11 @@ RUN if getent group "${GID}" >/dev/null; then \
     echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}"; \
     chmod 0440 "/etc/sudoers.d/${USER}"
 
-# Setup locale ,timezone and Replace apt urls (Change to Taiwan)
-ENV TZ="Asia/Taipei"
-ENV LC_ALL="en_US.UTF-8"
-ENV LANG="en_US.UTF-8"
-ENV LANGUAGE="en_US:en"
+USER ${USER}
 
-RUN sed -i 's@archive.ubuntu.com@tw.archive.ubuntu.com@g' /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        tzdata \
-        locales && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    locale-gen "${LANG}" && \
-    update-locale LANG="${LANG}" && \
-    ln -snf /usr/share/zoneinfo/"${TZ}" /etc/localtime && echo "${TZ}" > /etc/timezone
-
-############################### INSTALL #######################################
-# Install packages
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        sudo \
-        psmisc \
-        htop \
-        # Shell
-        tmux \
-        terminator \
-        # base tools
-        ca-certificates \
-        software-properties-common \
-        wget \
-        curl \
-        git \
-        vim \
-        tree \
-        # python3 tools
-        python3-pip \
-        python3-dev \
-        python3-setuptools \
-        # auto complete
-        bash-completion \
-        python3-colcon-argcomplete \
-        ros-${ROS_DISTRO}-ros2cli \
-        && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-############################## USER CONFIG ####################################
 ARG ENTRYPOINT_FILE="entrypoint.sh"
-ARG CONFIG_DIR="/tmp/config"
-
 COPY --chmod=0755 "./${ENTRYPOINT_FILE}" "/entrypoint.sh"
-COPY --chown="${USER}":"${GROUP}" --chmod=0755 "config" "${CONFIG_DIR}"
-
-# Switch USER
-USER "${USER}"
-
-# Run commands as USER
-RUN "${CONFIG_DIR}"/pip/setup.sh
-
-# Setup shell, terminator, tmux
-RUN cat "${CONFIG_DIR}"/shell/bashrc >> "${HOME}/.bashrc" && \
-    chown "${USER}":"${GROUP}" "${HOME}/.bashrc" && \
-    "${CONFIG_DIR}"/shell/terminator/setup.sh && \
-    "${CONFIG_DIR}"/shell/tmux/setup.sh && \
-    sudo rm -rf "${CONFIG_DIR}"
-
-# Switch workspace
-WORKDIR "${HOME}/work"
-
-# * Make SSH available
-EXPOSE 22
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["bash"]
-# CMD ["terminator"]
-# CMD ["tmux"]
+CMD ["ros2", "launch", "realsense2_camera", "rs_align_depth_launch.py"]
+
