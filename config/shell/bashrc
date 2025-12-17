@@ -6,8 +6,27 @@ function alias_func() {
     alias ebc='vim ${HOME}/.bashrc'
     alias sbc='source ${HOME}/.bashrc && \
         echo "sourced ${HOME}/.bashrc"'
-    alias swc='source ${HOME}/work/devel/setup.bash && \
-        echo "sourced ${HOME}/work/devel/setup.bash"'
+}
+
+function swc() {
+    local -ar setup_path=(
+        "./devel"
+        "../devel"
+        "${HOME}/work/devel"
+        )
+    local -r setup_file="setup.bash"
+
+    for path in "${setup_path[@]}"; do
+        if [ -f "${path}/${setup_file}" ]; then
+            source "${path}/${setup_file}"
+            printf "sourced %s\n" "${path}/${setup_file}"
+            return 0
+        fi
+    done
+
+    printf "No %s found in:\n" "${setup_file}"
+    printf " - %s\n" "${setup_path[@]}" >&2
+    return 1
 }
 
 function color_git_branch() {
@@ -35,8 +54,6 @@ function color_git_branch() {
 function ros_complete() {
     local -ar files=(
         "/etc/bash_completion::bash-completion"
-        "/usr/share/colcon_cd/function/colcon_cd.sh::ros-${ROS_DISTRO}-colcon-cd"
-        "/usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash::ros-${ROS_DISTRO}-colcon-argcomplete"
     )
 
     local entry=""
