@@ -74,7 +74,7 @@ function ros_source() {
     local _ws="${1:-"${HOME}/work"}"
     local -ar _files=(
         "/opt/ros/${ROS_DISTRO}/setup.bash"
-        "${_ws}/devel/local_setup.bash"
+        "${_ws}/devel/setup.bash"
     )
 
     local _file=""
